@@ -270,7 +270,8 @@ export const panelStyles = css`
   .sev.notice, .sev.status { background: var(--rk-util); }
   .more { display: flex; justify-content: center; padding-top: 12px; }
 
-  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; }
+  /* The value keeps at least 28% of the row: a long label wraps instead of squeezing it. */
+  .kv { display: grid; grid-template-columns: minmax(0, auto) minmax(28%, 1fr); gap: 8px 16px; }
   .kv .key { color: var(--rk-muted); font-size: 14px; }
   .kv .val { font-size: 14px; font-weight: 500; text-align: end; overflow-wrap: anywhere; }
 

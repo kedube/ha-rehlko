@@ -79,7 +79,8 @@ export interface Derived {
   nominal_voltage: number;
   supports_exercise_scheduling: boolean;
   supports_next_exercise_datetime: boolean;
-  /** `device.deviceIpAddress` as an address: the service reports the socket, `[::ffff:a.b.c.d]:port`. */
+  /** `device.deviceIpAddress` as an address: the service reports the socket it saw the controller
+   *  connect from, `[::ffff:a.b.c.d]:port`. Not the controller's address on its own network. */
   ip_address: string | null;
 }
 

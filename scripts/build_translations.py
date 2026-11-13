@@ -162,7 +162,7 @@ SENSOR = {
     "fuel_type": enum_sensor("Fuel type", V.FUEL_TYPE),
     "cooling_type": enum_sensor("Cooling", V.COOLING_TYPE),
     "connection_type": enum_sensor("Connection", V.CONNECTION_TYPE),
-    "device_ip_address": {"name": "IP address"},
+    "device_ip_address": {"name": "IP address seen by Rehlko"},
     "server_ip_address": {"name": "Server IP address"},
     "mac_address": {"name": "MAC address"},
     "last_connected": {"name": "Last connected"},

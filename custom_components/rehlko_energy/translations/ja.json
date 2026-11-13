@@ -354,7 +354,7 @@
         }
       },
       "device_ip_address": {
-        "name": "IP アドレス"
+        "name": "Rehlko 側から見た IP アドレス"
       },
       "server_ip_address": {
         "name": "サーバー IP アドレス"

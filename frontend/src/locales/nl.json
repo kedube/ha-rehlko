@@ -153,7 +153,7 @@
   "edit.save": "Opslaan",
   "diagnostics.title": "Diagnostiek",
   "diagnostics.connected": "Verbonden",
-  "diagnostics.device_ip": "IP-adres apparaat",
+  "diagnostics.device_ip": "IP-adres gezien door Rehlko",
   "diagnostics.mac": "MAC-adres",
   "diagnostics.uptime": "Uptime",
   "diagnostics.last_connected": "Laatst verbonden",

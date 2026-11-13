@@ -223,8 +223,14 @@ engineStateDisplayNameEn`.
 
 `deviceIpAddress` is the socket the service saw the controller connect from, not a bare
 address: an IPv4 peer arrives as `[::ffff:100.100.0.69]:42636` (IPv4-mapped IPv6, in brackets,
-with the source port). The IP address sensor and the panel show the address alone
-(`100.100.0.69`); the payload, as everywhere, is kept as received.
+with the source port). The "IP address seen by Rehlko" sensor and the panel show the address
+alone (`100.100.0.69`); the payload, as everywhere, is kept as received.
+
+This is the service's view of the connection, and the only address it has for the device (the
+app shows it as "Connected IP Address"). It is never the controller's address on its own
+network, which no payload carries, and it can be a private hop on the way in rather than the
+site's public address: the example above is in 100.64.0.0/10, the range carriers and cloud
+networks use internally.
 
 **Device details** (`/devices/{id}`): the summary under `device`, plus `generators[],
 powerSource, switchState, coolingType, connectionType, serverIpAddress, serviceAgreement,

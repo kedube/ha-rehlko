@@ -5,6 +5,19 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+### Changed
+
+- The **IP address** sensor and the panel's "Device IP" row are now called **IP address seen
+  by Rehlko**. The value is where Rehlko's servers saw the controller's connection come from,
+  not the generator's address on your own network, which the service does not report; the
+  old names suggested otherwise. Entity IDs of existing installations do not change.
+
+### Fixed
+
+- On a phone, a long label in the panel's two-column lists (French's Diagnostics tab, for
+  one) no longer squeezes the value beside it into a column a few characters wide; the label
+  wraps instead.
+
 ## [1.02] - 2026-11-13
 
 ### Changed

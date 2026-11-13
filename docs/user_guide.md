@@ -77,9 +77,16 @@ start/end, exercise in progress. Activity: last activity, last notification. Sit
 temperature, weather.
 
 Diagnostic sensors: model, controller product/type, firmware version/build, fuel type, cooling,
-connection, IP/MAC, last connected, status/parameter update times, uptime %, Wi‑Fi/cellular
+connection, the IP address Rehlko sees, MAC address, last connected, status/parameter update times, uptime %, Wi‑Fi/cellular
 signal, dealer, service agreement, cellular plan status/usage/expiry, scheduled firmware update,
 installation progress, and the transfer switch's position/link/signal.
+
+**IP address seen by Rehlko** is where Rehlko's servers saw the controller's connection come
+from; the service reports nothing else about the network. It is not the generator's address
+on your own network (`192.168.x.x` or similar), which only your router knows, and it need not
+be your public address either: one between `100.64.0.0` and `100.127.255.255` is a private
+address inside a carrier's or the service's own network. To find the generator on your
+network, look up its **MAC address** in your router's list of devices.
 
 **Energy produced** (kWh) can be added to the Energy dashboard. Rehlko's service reports the
 generator's load in watts, not energy, so the integration adds the load up between polls and

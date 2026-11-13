@@ -153,7 +153,7 @@
   "edit.save": "Salvar",
   "diagnostics.title": "Diagnóstico",
   "diagnostics.connected": "Conectado",
-  "diagnostics.device_ip": "IP do dispositivo",
+  "diagnostics.device_ip": "Endereço IP visto pela Rehlko",
   "diagnostics.mac": "Endereço MAC",
   "diagnostics.uptime": "Tempo de atividade",
   "diagnostics.last_connected": "Última conexão",

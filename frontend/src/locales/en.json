@@ -171,7 +171,7 @@
 
   "diagnostics.title": "Diagnostics",
   "diagnostics.connected": "Connected",
-  "diagnostics.device_ip": "Device IP",
+  "diagnostics.device_ip": "IP address seen by Rehlko",
   "diagnostics.mac": "MAC address",
   "diagnostics.uptime": "Uptime",
   "diagnostics.last_connected": "Last connected",

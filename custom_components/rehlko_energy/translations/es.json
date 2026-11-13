@@ -354,7 +354,7 @@
         }
       },
       "device_ip_address": {
-        "name": "Dirección IP"
+        "name": "Dirección IP vista por Rehlko"
       },
       "server_ip_address": {
         "name": "Dirección IP del servidor"

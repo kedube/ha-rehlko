@@ -153,7 +153,7 @@
   "edit.save": "Zapisz",
   "diagnostics.title": "Diagnostyka",
   "diagnostics.connected": "Połączony",
-  "diagnostics.device_ip": "Adres IP urządzenia",
+  "diagnostics.device_ip": "Adres IP widziany przez Rehlko",
   "diagnostics.mac": "Adres MAC",
   "diagnostics.uptime": "Dostępność połączenia",
   "diagnostics.last_connected": "Ostatnie połączenie",

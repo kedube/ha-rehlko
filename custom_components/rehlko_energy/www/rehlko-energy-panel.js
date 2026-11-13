@@ -890,7 +890,8 @@ var L = {
   .sev.notice, .sev.status { background: var(--rk-util); }
   .more { display: flex; justify-content: center; padding-top: 12px; }
 
-  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; }
+  /* The value keeps at least 28% of the row: a long label wraps instead of squeezing it. */
+  .kv { display: grid; grid-template-columns: minmax(0, auto) minmax(28%, 1fr); gap: 8px 16px; }
   .kv .key { color: var(--rk-muted); font-size: 14px; }
   .kv .val { font-size: 14px; font-weight: 500; text-align: end; overflow-wrap: anywhere; }
 
@@ -1442,7 +1443,7 @@ var Mt = {
 	"edit.save": "Speichern",
 	"diagnostics.title": "Diagnose",
 	"diagnostics.connected": "Verbunden",
-	"diagnostics.device_ip": "Geräte-IP",
+	"diagnostics.device_ip": "Von Rehlko gesehene IP-Adresse",
 	"diagnostics.mac": "MAC-Adresse",
 	"diagnostics.uptime": "Verfügbarkeit",
 	"diagnostics.last_connected": "Zuletzt verbunden",
@@ -1613,7 +1614,7 @@ var Mt = {
 	"edit.save": "Save",
 	"diagnostics.title": "Diagnostics",
 	"diagnostics.connected": "Connected",
-	"diagnostics.device_ip": "Device IP",
+	"diagnostics.device_ip": "IP address seen by Rehlko",
 	"diagnostics.mac": "MAC address",
 	"diagnostics.uptime": "Uptime",
 	"diagnostics.last_connected": "Last connected",
@@ -1787,7 +1788,7 @@ var Mt = {
 		"edit.save": "Guardar",
 		"diagnostics.title": "Diagnóstico",
 		"diagnostics.connected": "Conectado",
-		"diagnostics.device_ip": "IP del dispositivo",
+		"diagnostics.device_ip": "Dirección IP vista por Rehlko",
 		"diagnostics.mac": "Dirección MAC",
 		"diagnostics.uptime": "Disponibilidad",
 		"diagnostics.last_connected": "Última conexión",
@@ -1959,7 +1960,7 @@ var Mt = {
 		"edit.save": "Enregistrer",
 		"diagnostics.title": "Diagnostic",
 		"diagnostics.connected": "Connectée",
-		"diagnostics.device_ip": "Adresse IP de l'appareil",
+		"diagnostics.device_ip": "Adresse IP vue par Rehlko",
 		"diagnostics.mac": "Adresse MAC",
 		"diagnostics.uptime": "Disponibilité de la connexion",
 		"diagnostics.last_connected": "Dernière connexion",
@@ -2131,7 +2132,7 @@ var Mt = {
 		"edit.save": "Salva",
 		"diagnostics.title": "Diagnostica",
 		"diagnostics.connected": "Connesso",
-		"diagnostics.device_ip": "IP del dispositivo",
+		"diagnostics.device_ip": "Indirizzo IP visto da Rehlko",
 		"diagnostics.mac": "Indirizzo MAC",
 		"diagnostics.uptime": "Disponibilità della connessione",
 		"diagnostics.last_connected": "Ultima connessione",
@@ -2303,7 +2304,7 @@ var Mt = {
 		"edit.save": "保存",
 		"diagnostics.title": "診断",
 		"diagnostics.connected": "接続済み",
-		"diagnostics.device_ip": "デバイス IP",
+		"diagnostics.device_ip": "Rehlko 側から見た IP アドレス",
 		"diagnostics.mac": "MAC アドレス",
 		"diagnostics.uptime": "稼働率",
 		"diagnostics.last_connected": "最終接続",
@@ -2475,7 +2476,7 @@ var Mt = {
 		"edit.save": "Opslaan",
 		"diagnostics.title": "Diagnostiek",
 		"diagnostics.connected": "Verbonden",
-		"diagnostics.device_ip": "IP-adres apparaat",
+		"diagnostics.device_ip": "IP-adres gezien door Rehlko",
 		"diagnostics.mac": "MAC-adres",
 		"diagnostics.uptime": "Uptime",
 		"diagnostics.last_connected": "Laatst verbonden",
@@ -2647,7 +2648,7 @@ var Mt = {
 		"edit.save": "Zapisz",
 		"diagnostics.title": "Diagnostyka",
 		"diagnostics.connected": "Połączony",
-		"diagnostics.device_ip": "Adres IP urządzenia",
+		"diagnostics.device_ip": "Adres IP widziany przez Rehlko",
 		"diagnostics.mac": "Adres MAC",
 		"diagnostics.uptime": "Dostępność połączenia",
 		"diagnostics.last_connected": "Ostatnie połączenie",
@@ -2819,7 +2820,7 @@ var Mt = {
 		"edit.save": "Salvar",
 		"diagnostics.title": "Diagnóstico",
 		"diagnostics.connected": "Conectado",
-		"diagnostics.device_ip": "IP do dispositivo",
+		"diagnostics.device_ip": "Endereço IP visto pela Rehlko",
 		"diagnostics.mac": "Endereço MAC",
 		"diagnostics.uptime": "Tempo de atividade",
 		"diagnostics.last_connected": "Última conexão",
@@ -2991,7 +2992,7 @@ var Mt = {
 		"edit.save": "保存",
 		"diagnostics.title": "诊断",
 		"diagnostics.connected": "已连接",
-		"diagnostics.device_ip": "设备 IP",
+		"diagnostics.device_ip": "Rehlko 看到的 IP 地址",
 		"diagnostics.mac": "MAC 地址",
 		"diagnostics.uptime": "在线率",
 		"diagnostics.last_connected": "上次连接",

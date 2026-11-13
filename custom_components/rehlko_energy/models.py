@@ -141,7 +141,10 @@ class GeneratorData:
 
     @property
     def ip_address(self) -> str | None:
-        """The address the controller connects from, without the port the service adds."""
+        """Where the service saw the controller's connection come from, without the port.
+
+        Not the controller's address on its own network, which the service does not report.
+        """
         return plain_ip(self.device.get("deviceIpAddress"))
 
     # ------------------------------------------------------------- derived state

@@ -354,7 +354,7 @@
         }
       },
       "device_ip_address": {
-        "name": "IP 地址"
+        "name": "Rehlko 看到的 IP 地址"
       },
       "server_ip_address": {
         "name": "服务器 IP 地址"

@@ -354,7 +354,7 @@
         }
       },
       "device_ip_address": {
-        "name": "IP address"
+        "name": "IP address seen by Rehlko"
       },
       "server_ip_address": {
         "name": "Server IP address"

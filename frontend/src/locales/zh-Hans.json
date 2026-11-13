@@ -153,7 +153,7 @@
   "edit.save": "保存",
   "diagnostics.title": "诊断",
   "diagnostics.connected": "已连接",
-  "diagnostics.device_ip": "设备 IP",
+  "diagnostics.device_ip": "Rehlko 看到的 IP 地址",
   "diagnostics.mac": "MAC 地址",
   "diagnostics.uptime": "在线率",
   "diagnostics.last_connected": "上次连接",

@@ -153,7 +153,7 @@
   "edit.save": "保存",
   "diagnostics.title": "診断",
   "diagnostics.connected": "接続済み",
-  "diagnostics.device_ip": "デバイス IP",
+  "diagnostics.device_ip": "Rehlko 側から見た IP アドレス",
   "diagnostics.mac": "MAC アドレス",
   "diagnostics.uptime": "稼働率",
   "diagnostics.last_connected": "最終接続",

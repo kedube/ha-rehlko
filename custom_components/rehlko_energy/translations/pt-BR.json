@@ -354,7 +354,7 @@
         }
       },
       "device_ip_address": {
-        "name": "Endereço IP"
+        "name": "Endereço IP visto pela Rehlko"
       },
       "server_ip_address": {
         "name": "Endereço IP do servidor"
