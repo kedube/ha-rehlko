@@ -144,6 +144,7 @@ def test_update_entity_versions(sample_gen) -> None:
     entity = update_mod.FirmwareUpdate(coord, 1)
     assert entity.installed_version == "3.14"
     assert entity.latest_version == "3.15"
+    assert entity.entity_picture is None  # the icon in icons.json is what shows
     assert "3.15" not in (entity.release_summary or "") or "Released" in (
         entity.release_summary or ""
     )

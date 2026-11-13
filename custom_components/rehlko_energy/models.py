@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from .api.util import as_float, first
+from .api.util import as_float, first, plain_ip
 from .const import DEFAULT_NOMINAL_VOLTAGE, UTILITY_PRESENT_FRACTION
 
 # Genset (engine) states in which the engine is turning.
@@ -138,6 +138,11 @@ class GeneratorData:
     @property
     def model(self) -> str | None:
         return first(self.device.get("modelDisplayName"), self.device.get("model"))
+
+    @property
+    def ip_address(self) -> str | None:
+        """The address the controller connects from, without the port the service adds."""
+        return plain_ip(self.device.get("deviceIpAddress"))
 
     # ------------------------------------------------------------- derived state
     @property

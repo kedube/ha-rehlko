@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+### Fixed
+
+- The **IP address** diagnostic sensor and the panel's Diagnostics tab show the controller's
+  address (`100.100.0.69`), not the socket the service reports (`[::ffff:100.100.0.69]:42636`):
+  the port is dropped and an IPv4 address written the IPv6 way is shown as IPv4. The **Server
+  IP address** sensor is cleaned the same way.
+- The **Controller firmware** entity shows its icon instead of the integration's logo.
+
 ## [1.00] - 2026-11-13
 
 ### Added

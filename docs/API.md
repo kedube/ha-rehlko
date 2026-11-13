@@ -221,6 +221,11 @@ hasServiceAgreement, totalRuntimeHours, serviceAgreementStatus, cellularExpiryDa
 cellularDataPercentage, cellularDataStatus, cellKitPaymentStatus, uptimePercent, engineState,
 engineStateDisplayNameEn`.
 
+`deviceIpAddress` is the socket the service saw the controller connect from, not a bare
+address: an IPv4 peer arrives as `[::ffff:100.100.0.69]:42636` (IPv4-mapped IPv6, in brackets,
+with the source port). The IP address sensor and the panel show the address alone
+(`100.100.0.69`); the payload, as everywhere, is kept as received.
+
 **Device details** (`/devices/{id}`): the summary under `device`, plus `generators[],
 powerSource, switchState, coolingType, connectionType, serverIpAddress, serviceAgreement,
 exercise, lastRanTimestamp, totalRuntimeHours, totalOperationHours,

@@ -49,6 +49,12 @@ class FirmwareUpdate(RehlkoEntity, UpdateEntity):
         return text(self._texts, FIRMWARE_SUMMARY_PATH, FIRMWARE_SUMMARY, key)
 
     @property
+    def entity_picture(self) -> str | None:
+        """No picture: an update entity shows its integration's logo unless told otherwise,
+        and this one has an icon (icons.json) like the other diagnostic entities."""
+        return None
+
+    @property
     def installed_version(self) -> str | None:
         gen = self.gen
         if gen is None:

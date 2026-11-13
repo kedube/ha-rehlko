@@ -32,6 +32,7 @@ def _derived(gen: GeneratorData) -> dict[str, Any]:
         "nominal_voltage": gen.nominal_voltage,
         "supports_exercise_scheduling": gen.supports_exercise_scheduling,
         "supports_next_exercise_datetime": gen.supports_next_exercise_datetime,
+        "ip_address": gen.ip_address,
     }
 
 

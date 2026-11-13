@@ -79,6 +79,8 @@ export interface Derived {
   nominal_voltage: number;
   supports_exercise_scheduling: boolean;
   supports_next_exercise_datetime: boolean;
+  /** `device.deviceIpAddress` as an address: the service reports the socket, `[::ffff:a.b.c.d]:port`. */
+  ip_address: string | null;
 }
 
 export interface Generator {

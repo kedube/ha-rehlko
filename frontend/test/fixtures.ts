@@ -17,6 +17,7 @@ export function sampleGenerator(overrides: Partial<Generator> = {}): Generator {
       on_generator_power: false, utility_present: true, ready_to_run: true,
       has_schedule: true, e_stop_engaged: false, nominal_voltage: 240,
       supports_exercise_scheduling: true, supports_next_exercise_datetime: true,
+      ip_address: null,
     },
     entities: {}, details_updated: new Date().toISOString(), feeds_updated: null,
     ...overrides,

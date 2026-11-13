@@ -177,6 +177,8 @@ def test_icons_cover_platforms() -> None:
     # An icon for a translation key that does not exist is a typo.
     for platform, entries in icons["entity"].items():
         assert set(entries) <= set(STRINGS["entity"][platform]), platform
+    # The firmware update entity has no picture (update.py), so this is what it shows.
+    assert icons["entity"]["update"]["firmware"]["default"].startswith("mdi:")
 
 
 def test_sidebar_title_follows_the_panel_translations() -> None:

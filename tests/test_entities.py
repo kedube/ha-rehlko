@@ -33,7 +33,7 @@ SAMPLE_DEVICE: dict[str, Any] = {
     "currentFirmware": "3.14.2",
     "isConnected": True,
     "connectionType": "KohlerWifi",
-    "deviceIpAddress": "10.0.0.5",
+    "deviceIpAddress": "[::ffff:10.0.0.5]:42636",  # as reported: the socket, not the address
     "macAddress": "aa:bb:cc:dd:ee:ff",
     "lastConnectedTimestamp": "2026-11-12T20:00:00Z",
     "statusUpdateTimestamp": "2026-11-12T20:01:00Z",
@@ -256,6 +256,11 @@ def test_key_sensor_values(sample_gen: GeneratorData) -> None:
     assert value("status") == "running"
     assert value("total_runtime") == 182.4
     assert value("power_source") == "generator"
+    # The address alone, whichever way the service wraps it.
+    assert value("device_ip_address") == "10.0.0.5"
+    assert value("server_ip_address") == "203.0.113.7"
+    sample_gen.details["serverIpAddress"] = "[::ffff:203.0.113.7]:443"
+    assert value("server_ip_address") == "203.0.113.7"
 
 
 def test_enum_sensor_passes_through_unknown_value(sample_gen: GeneratorData) -> None:

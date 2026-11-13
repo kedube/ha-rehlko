@@ -3637,7 +3637,7 @@ var $ = class extends P {
 			return t === null ? null : `${t}%`;
 		}, a = e.details.autoFirmwareUpdateEnabled, o = [
 			[t("diagnostics.connected"), e.derived.is_connected ? t("common.yes") : t("common.no")],
-			[t("diagnostics.device_ip"), e.device.deviceIpAddress],
+			[t("diagnostics.device_ip"), e.derived.ip_address],
 			[t("diagnostics.mac"), e.device.macAddress],
 			[t("diagnostics.uptime"), i(e.device.uptimePercent)],
 			[t("diagnostics.last_connected"), W(e.device.lastConnectedTimestamp, n)],

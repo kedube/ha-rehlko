@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import pytest
+
 from custom_components.rehlko_energy.api import vocabulary as V
 from custom_components.rehlko_energy.api.util import (
     format_timestamp,
     has_offset,
     humanize,
     parse_timestamp,
+    plain_ip,
     slugify,
 )
 
@@ -56,6 +59,33 @@ def test_format_timestamp_mirrors_source_form() -> None:
     # When the service used a naive wall-clock, write naive local time (no offset).
     naive = format_timestamp(when, like="2026-01-01T00:00:00", site_tz=UTC)
     assert naive == "2026-11-12T20:00:00"
+
+
+@pytest.mark.parametrize(
+    ("reported", "address"),
+    [
+        # What the service sends: the socket it saw, an IPv4 peer written the IPv6 way.
+        ("[::ffff:100.100.0.69]:42636", "100.100.0.69"),
+        ("[::ffff:6464:45]:42636", "100.100.0.69"),
+        ("::ffff:100.100.0.69", "100.100.0.69"),
+        ("100.100.0.69:42636", "100.100.0.69"),
+        ("100.100.0.69", "100.100.0.69"),
+        (" 100.100.0.69 ", "100.100.0.69"),
+        # A real IPv6 address stays IPv6, and its last group is not taken for a port.
+        ("[2001:db8::1]:443", "2001:db8::1"),
+        ("[2001:db8::1]", "2001:db8::1"),
+        ("2001:db8::8a2e:370:7334", "2001:db8::8a2e:370:7334"),
+        ("2001:0db8:0000:0000:0000:0000:0000:0001", "2001:db8::1"),
+        # Not an address: shown as reported, not dropped.
+        ("gateway.example:443", "gateway.example:443"),
+        ("[not an address]:1", "[not an address]:1"),
+        ("", None),
+        ("   ", None),
+        (None, None),
+    ],
+)
+def test_plain_ip_takes_the_address_out_of_a_socket(reported, address) -> None:
+    assert plain_ip(reported) == address
 
 
 def test_vocabulary_shapes() -> None:

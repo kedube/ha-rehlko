@@ -800,7 +800,7 @@ export class RehlkoEnergyPanel extends LitElement {
     const autoUpdate = gen.details["autoFirmwareUpdateEnabled"];
     const rows: Array<[string, unknown]> = [
       [t("diagnostics.connected"), gen.derived.is_connected ? t("common.yes") : t("common.no")],
-      [t("diagnostics.device_ip"), gen.device["deviceIpAddress"]],
+      [t("diagnostics.device_ip"), gen.derived.ip_address],
       [t("diagnostics.mac"), gen.device["macAddress"]],
       [t("diagnostics.uptime"), percent(gen.device["uptimePercent"])],
       [t("diagnostics.last_connected"), fmtDateTime(gen.device["lastConnectedTimestamp"], f)],

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import math
 import re
 from datetime import UTC, datetime, tzinfo
@@ -149,3 +150,26 @@ def first(*values: Any) -> Any:
         if value is not None:
             return value
     return None
+
+
+def plain_ip(value: Any) -> str | None:
+    """The IP address in what the service reports, which is the socket it saw.
+
+    `[::ffff:100.100.0.69]:42636` -> `100.100.0.69`: the port goes, and an IPv4 address
+    written the IPv6 way is given as IPv4. Text that is not an address is returned as it is.
+    """
+    text = str(value).strip() if value is not None else ""
+    if not text:
+        return None
+    if text.startswith("["):
+        host = text[1:].partition("]")[0]
+    elif text.count(":") == 1:
+        host = text.partition(":")[0]  # IPv4 with a port; an IPv6 address has more colons
+    else:
+        host = text
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return text
+    mapped = getattr(address, "ipv4_mapped", None)
+    return str(address if mapped is None else mapped)

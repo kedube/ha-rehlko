@@ -296,6 +296,20 @@ describe("panel controls", () => {
     window.removeEventListener("location-changed", moved);
   });
 
+  it("shows the controller's address without the socket the service wraps it in", async () => {
+    const generator = sampleGenerator();
+    generator.device["deviceIpAddress"] = "[::ffff:192.0.2.25]:42636";
+    generator.derived.ip_address = "192.0.2.25";
+    const { panel } = setup(sampleSnapshot([generator]));
+    document.body.append(panel);
+    await settle(panel);
+    clickTab(panel, "Diagnostics");
+    await settle(panel);
+    const values = [...panel.shadowRoot!.querySelectorAll(".kv > *")].map((cell) => cell.textContent?.trim());
+    expect(values).toContain("192.0.2.25");
+    expect(panel.shadowRoot!.textContent).not.toContain("ffff");
+  });
+
   it("rolls notification controls back after failed service calls", async () => {
     const { panel, callService } = setup();
     document.body.append(panel);

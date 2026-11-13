@@ -43,6 +43,15 @@ async def test_setup_reload_unload(hass, entry, client, enable_custom_integratio
         assert snapshot["generators"][0]["device_id"] == 1
         assert snapshot["generators"][0]["available"]
         assert snapshot["generators"][0]["entities"]["sensor.battery_voltage"]
+        # The panel gets the controller's address as an address; the payload stays as sent.
+        assert snapshot["generators"][0]["derived"]["ip_address"] == "10.0.0.5"
+        assert (
+            snapshot["generators"][0]["device"]["deviceIpAddress"]
+            == SAMPLE_DEVICE["deviceIpAddress"]
+        )
+        # The firmware entity shows its icon, not the integration's logo.
+        firmware = hass.states.get("update.home_generator_controller_firmware")
+        assert firmware is not None and "entity_picture" not in firmware.attributes
         await ws.close()
         assert await hass.config_entries.async_reload(entry.entry_id)
         await hass.async_block_till_done()

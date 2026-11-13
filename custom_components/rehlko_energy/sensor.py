@@ -34,7 +34,7 @@ from homeassistant.util import dt as dt_util
 
 from . import RehlkoConfigEntry
 from .api import vocabulary as V
-from .api.util import as_float, humanize, parse_timestamp, slugify
+from .api.util import as_float, humanize, parse_timestamp, plain_ip, slugify
 from .const import CONF_EXTRA_DIAGNOSTICS, DEFAULT_EXTRA_DIAGNOSTICS
 from .coordinator import RehlkoCoordinator
 from .entity import RehlkoEntity, ats_device_info, value_or_none
@@ -576,7 +576,7 @@ SENSORS: tuple[RehlkoSensorDescription, ...] = (
         translation_key="device_ip_address",
         entity_category=DIAG,
         entity_registry_enabled_default=False,
-        value_fn=_device("deviceIpAddress"),
+        value_fn=lambda g: g.ip_address,
         exists_fn=_has_device("deviceIpAddress"),
         covers=("deviceIpAddress",),
     ),
@@ -585,7 +585,7 @@ SENSORS: tuple[RehlkoSensorDescription, ...] = (
         translation_key="server_ip_address",
         entity_category=DIAG,
         entity_registry_enabled_default=False,
-        value_fn=_detail("serverIpAddress"),
+        value_fn=lambda g: plain_ip(g.details.get("serverIpAddress")),
         exists_fn=_has_detail("serverIpAddress"),
         covers=("serverIpAddress",),
     ),
