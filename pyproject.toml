@@ -1,6 +1,6 @@
 [project]
 name = "ha-rehlko"
-version = "1.01"
+version = "1.02"
 description = "Home Assistant integration and sidebar panel for Rehlko (formerly Kohler) home standby generators."
 requires-python = ">=3.13"
 license = { file = "LICENSE" }

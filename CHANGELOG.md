@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+## [1.02] - 2026-11-13
+
 ### Changed
 
 - The panel's accent colour is Rehlko's blue (`#336EE5`, the one its website's buttons use)
