@@ -1,0 +1,41 @@
+name: Frontend
+
+on:
+  push:
+    paths:
+      - "frontend/**"
+      - "custom_components/rehlko_energy/www/**"
+      - "custom_components/rehlko_energy/translations/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "custom_components/rehlko_energy/www/**"
+      - "custom_components/rehlko_energy/translations/**"
+  workflow_dispatch:
+  workflow_call: # release.yml runs these checks before publishing
+
+permissions: {}
+
+jobs:
+  panel:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run test
+      # The built bundle is committed (the integration serves it). Fail if it drifted.
+      - name: Built panel is up to date
+        run: git diff --exit-code ../custom_components/rehlko_energy/www/rehlko-energy-panel.js

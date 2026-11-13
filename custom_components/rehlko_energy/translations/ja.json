@@ -1,0 +1,1003 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Rehlko Energy Management にサインイン",
+        "description": "Energy Mgmt.（旧 KOHLER Energy Management）アプリで使用しているメールアドレスとパスワードを入力してください。下記のアプリの認証情報は、Rehlko のサインインサービスに対してアプリを識別するためのものです。入手方法については、この統合のドキュメントを参照してください。",
+        "data": {
+          "username": "メールアドレス",
+          "password": "パスワード"
+        },
+        "data_description": {
+          "username": "Rehlko / Kohler Energy Management アカウントのメールアドレスです。",
+          "password": "セッションの有効期限が切れたときに統合が再度サインインできるよう、Home Assistant に保存されます。"
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "アプリの認証情報",
+            "description": "Energy Mgmt. アプリの設定に含まれる OAuth クライアント ID、クライアントシークレット、API キーです。",
+            "data": {
+              "client_id": "OAuth クライアント ID",
+              "client_secret": "OAuth クライアントシークレット",
+              "api_key": "API キー"
+            },
+            "data_description": {
+              "client_id": "アプリの設定ファイルにある CLIENT_ID です。",
+              "client_secret": "アプリの設定ファイルにある CLIENT_SECRET です。",
+              "api_key": "アプリの設定ファイルにある API_KEY です。"
+            }
+          }
+        }
+      },
+      "reauth_confirm": {
+        "title": "再度サインイン",
+        "description": "Rehlko が {username} のパスワードの再入力を求めています。",
+        "data": {
+          "password": "パスワード"
+        },
+        "data_description": {
+          "password": "セッションの有効期限が切れたときに統合が再度サインインできるよう、Home Assistant に保存されます。"
+        }
+      },
+      "reconfigure": {
+        "title": "認証情報を更新",
+        "description": "{username} のパスワードまたはアプリの認証情報を更新します（アプリのアップデートで変更された場合など）。",
+        "data": {
+          "password": "パスワード"
+        },
+        "data_description": {
+          "password": "セッションの有効期限が切れたときに統合が再度サインインできるよう、Home Assistant に保存されます。"
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "アプリの認証情報",
+            "description": "Energy Mgmt. アプリの設定に含まれる OAuth クライアント ID、クライアントシークレット、API キーです。",
+            "data": {
+              "client_id": "OAuth クライアント ID",
+              "client_secret": "OAuth クライアントシークレット",
+              "api_key": "API キー"
+            },
+            "data_description": {
+              "client_id": "アプリの設定ファイルにある CLIENT_ID です。",
+              "client_secret": "空欄のままにすると、保存済みの値が保持されます。",
+              "api_key": "空欄のままにすると、保存済みの値が保持されます。"
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "メールアドレスまたはパスワードが受け付けられませんでした。",
+      "sign_in_denied": "Rehlko のサインインサービスが、このアカウントのパスワードによるサインインを拒否しました。アカウントで多要素認証が必要な場合に発生します。この統合では多要素認証を完了できません。",
+      "invalid_app_credentials": "サインインサービスがアプリのクライアント ID またはクライアントシークレットを拒否しました。",
+      "invalid_api_key": "サインインはできましたが、API がリクエストを拒否しました。API キーを確認してください。",
+      "cannot_connect": "Rehlko サービスに接続できませんでした。",
+      "no_generators": "サインインはできましたが、このアカウントには発電機がありません。",
+      "unknown": "予期しないエラーが発生しました。ログを確認してください。"
+    },
+    "abort": {
+      "already_configured": "このアカウントはすでに設定されています。",
+      "reauth_successful": "再度サインインしました。",
+      "reconfigure_successful": "認証情報を更新しました。",
+      "wrong_account": "その認証情報は別のアカウントのものです。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Rehlko Energy Management のオプション",
+        "data": {
+          "scan_interval": "待機中のポーリング間隔",
+          "active_scan_interval": "運転中または停電中のポーリング間隔",
+          "feed_interval": "アクティビティログ、アラート、通知の取得間隔",
+          "notification_limit": "発電機ごとに取得する通知の件数",
+          "sidebar_panel": "サイドバーに「発電機」パネルを表示する",
+          "extra_diagnostic_entities": "その他すべての API フィールドの診断エンティティを作成する"
+        },
+        "data_description": {
+          "scan_interval": "発電機の待機中に状態を読み取る間隔です。",
+          "active_scan_interval": "エンジンの運転中、試運転中、または家に発電機から給電しているときに使用されます。",
+          "feed_interval": "これらのリストはめったに変わりません。間隔を長くするとリクエスト数が減ります。",
+          "notification_limit": "新しい通知から順に取得されます。",
+          "sidebar_panel": "パネルは管理者にのみ表示されます。",
+          "extra_diagnostic_entities": "無効の状態で作成されます。サービスが報告する内容は隠されず、デバイスページで有効にするまで記録もされません。"
+        }
+      }
+    }
+  },
+  "selector": {
+    "exercise_mode": {
+      "options": {
+        "unloaded": "無負荷",
+        "unloaded_full_speed": "無負荷（フルスピード）",
+        "loaded_full_speed": "負荷あり（フルスピード）",
+        "eco_exercise": "EcoExercise"
+      }
+    },
+    "exercise_frequency": {
+      "options": {
+        "weekly": "毎週",
+        "every_other_week": "隔週",
+        "monthly": "毎月"
+      }
+    },
+    "controller_kind": {
+      "options": {
+        "generator": "発電機",
+        "ats": "切替スイッチ"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "utility_voltage": {
+        "name": "商用電源電圧"
+      },
+      "generator_voltage": {
+        "name": "発電機電圧"
+      },
+      "generator_load": {
+        "name": "発電機負荷"
+      },
+      "generator_load_percent": {
+        "name": "発電機負荷（定格比）"
+      },
+      "energy_produced": {
+        "name": "発電電力量"
+      },
+      "set_output_voltage": {
+        "name": "定格出力電圧"
+      },
+      "power_source": {
+        "name": "電源",
+        "state": {
+          "unknown": "不明",
+          "utility": "商用電源",
+          "generator": "発電機"
+        }
+      },
+      "engine_speed": {
+        "name": "エンジン回転数"
+      },
+      "engine_frequency": {
+        "name": "発電機周波数"
+      },
+      "engine_oil_pressure": {
+        "name": "油圧"
+      },
+      "engine_coolant_temperature": {
+        "name": "冷却水温度"
+      },
+      "lube_oil_temperature": {
+        "name": "潤滑油温度"
+      },
+      "engine_compartment_temperature": {
+        "name": "エンジン室温度"
+      },
+      "engine_state": {
+        "name": "エンジン状態",
+        "state": {
+          "off": "停止",
+          "crank_on": "クランキング中",
+          "crank_pause": "クランキング休止中",
+          "idle": "アイドリング",
+          "running": "運転中",
+          "cool_down": "冷却運転中",
+          "stopping": "停止処理中",
+          "shutdown": "シャットダウン",
+          "performing_loaded_test": "負荷ありテスト中",
+          "performing_unloaded_test": "無負荷テスト中",
+          "performing_variable_speed_exercise": "可変速試運転中",
+          "performing_loaded_exercise": "負荷あり試運転中",
+          "fuel_priming": "燃料プライミング中",
+          "ecm_powered": "ECM 通電中",
+          "fault_cool_down": "故障時冷却運転中",
+          "standby": "待機中",
+          "preheat": "予熱中",
+          "performing_unloaded_full_speed_exercise": "無負荷フルスピード試運転中",
+          "performing_full_speed_diagnostics": "フルスピード診断中",
+          "unloading": "負荷解除中",
+          "stopped_by_generator_management": "発電機管理により停止",
+          "synchronizing": "同期中",
+          "protective_relay_tripped_contactor": "保護リレー作動",
+          "start_delay": "始動遅延中",
+          "stationary_regen": "手動再生中",
+          "choke": "チョーク作動中",
+          "performing_eco_cycle": "EcoExercise 実行中"
+        }
+      },
+      "fuel_level": {
+        "name": "燃料レベル"
+      },
+      "battery_voltage": {
+        "name": "バッテリー電圧"
+      },
+      "controller_temperature": {
+        "name": "コントローラー温度"
+      },
+      "controller_clock": {
+        "name": "コントローラー時計"
+      },
+      "status": {
+        "name": "ステータス",
+        "state": {
+          "ready_to_run": "運転準備完了",
+          "shutdown": "シャットダウン",
+          "switch_state_off": "スイッチオフ",
+          "running": "運転中",
+          "running_exercise": "試運転中",
+          "offline": "オフライン"
+        }
+      },
+      "switch_state": {
+        "name": "モードスイッチ",
+        "state": {
+          "off": "オフ",
+          "auto": "Auto",
+          "manual": "手動"
+        }
+      },
+      "shutdown_reason": {
+        "name": "シャットダウン原因"
+      },
+      "alert_count": {
+        "name": "発生中のアラート"
+      },
+      "total_runtime": {
+        "name": "総運転時間"
+      },
+      "total_operation": {
+        "name": "総稼働時間"
+      },
+      "runtime_since_maintenance": {
+        "name": "メンテナンス後の運転時間"
+      },
+      "last_run": {
+        "name": "前回の運転"
+      },
+      "last_maintenance": {
+        "name": "前回のメンテナンス"
+      },
+      "next_maintenance": {
+        "name": "次回のメンテナンス"
+      },
+      "maintenance_period": {
+        "name": "メンテナンス間隔"
+      },
+      "last_maintenance_note": {
+        "name": "最新のメンテナンスメモ"
+      },
+      "next_exercise": {
+        "name": "次回の試運転"
+      },
+      "last_exercise_start": {
+        "name": "前回の試運転開始"
+      },
+      "last_exercise_end": {
+        "name": "前回の試運転終了"
+      },
+      "exercise_running_mode": {
+        "name": "実行中の試運転",
+        "state": {
+          "none": "なし",
+          "unloaded": "無負荷",
+          "unloaded_full_speed": "無負荷（フルスピード）",
+          "loaded_full_speed": "負荷あり（フルスピード）",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "last_event": {
+        "name": "最新のアクティビティ"
+      },
+      "last_notification": {
+        "name": "最新の通知"
+      },
+      "weather_temperature": {
+        "name": "屋外温度"
+      },
+      "weather_condition": {
+        "name": "天気",
+        "state": {
+          "clear_sky": "快晴",
+          "few_clouds": "晴れ",
+          "scattered_clouds": "晴れ時々曇り",
+          "broken_clouds": "曇り",
+          "shower_rain": "にわか雨",
+          "rain": "雨",
+          "thunderstorm": "雷雨",
+          "snow": "雪",
+          "mist": "もや",
+          "unknown": "不明"
+        }
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "product": {
+        "name": "コントローラー製品"
+      },
+      "controller_type": {
+        "name": "コントローラーの種類"
+      },
+      "firmware_version": {
+        "name": "ファームウェアバージョン"
+      },
+      "current_firmware": {
+        "name": "ファームウェアビルド"
+      },
+      "fuel_type": {
+        "name": "燃料の種類",
+        "state": {
+          "natural_gas": "天然ガス",
+          "liquid_propane": "液化プロパン（LP）",
+          "gasoline": "ガソリン",
+          "diesel": "ディーゼル",
+          "unknown_undefined": "不明"
+        }
+      },
+      "cooling_type": {
+        "name": "冷却方式",
+        "state": {
+          "unknown": "不明",
+          "air": "空冷",
+          "liquid": "水冷"
+        }
+      },
+      "connection_type": {
+        "name": "接続方式",
+        "state": {
+          "unknown": "不明",
+          "ethernet": "イーサネット",
+          "kohler_wifi": "Kohler Wi-Fi",
+          "other_wifi": "その他の Wi-Fi",
+          "cellular": "セルラー",
+          "kohler_cell_kit": "Kohler セルラーキット"
+        }
+      },
+      "device_ip_address": {
+        "name": "IP アドレス"
+      },
+      "server_ip_address": {
+        "name": "サーバー IP アドレス"
+      },
+      "mac_address": {
+        "name": "MAC アドレス"
+      },
+      "last_connected": {
+        "name": "最終接続"
+      },
+      "status_updated": {
+        "name": "ステータス最終更新"
+      },
+      "parameters_updated": {
+        "name": "パラメーター最終更新"
+      },
+      "uptime_percent": {
+        "name": "接続稼働率"
+      },
+      "remote_reset_counter": {
+        "name": "リモートリセットのカウントダウン"
+      },
+      "wifi_strength": {
+        "name": "Wi-Fi 信号強度",
+        "state": {
+          "weak": "弱い",
+          "moderate": "中程度",
+          "strong": "強い"
+        }
+      },
+      "cellular_strength": {
+        "name": "セルラー信号強度",
+        "state": {
+          "weak": "弱い",
+          "moderate": "中程度",
+          "strong": "強い"
+        }
+      },
+      "site_address": {
+        "name": "設置場所の住所"
+      },
+      "dealer": {
+        "name": "販売店"
+      },
+      "service_agreement_status": {
+        "name": "保守契約",
+        "state": {
+          "active": "有効",
+          "expired": "期限切れ",
+          "missing_data": "データなし",
+          "none": "なし"
+        }
+      },
+      "cellular_data_status": {
+        "name": "セルラーデータ",
+        "state": {
+          "active": "有効",
+          "near_data_limit": "データ上限間近",
+          "reached_data_limit": "データ上限に到達",
+          "unknown": "不明"
+        }
+      },
+      "cellular_data_used": {
+        "name": "セルラーデータ使用量"
+      },
+      "cellular_expiry": {
+        "name": "セルラープラン有効期限"
+      },
+      "cellular_installed": {
+        "name": "セルラーキット設置日"
+      },
+      "cell_kit_payment_status": {
+        "name": "セルラープランの支払い",
+        "state": {
+          "paid": "支払い済み",
+          "in_progress": "処理中",
+          "renewal_failed": "更新失敗",
+          "unknown": "不明"
+        }
+      },
+      "cell_data_remaining": {
+        "name": "セルラーデータ残量"
+      },
+      "scheduled_firmware_update": {
+        "name": "ファームウェアアップデート予定"
+      },
+      "install_progress": {
+        "name": "設置の進行状況"
+      },
+      "ats_power_source": {
+        "name": "切替スイッチの位置",
+        "state": {
+          "unknown": "不明",
+          "utility": "商用電源",
+          "generator": "発電機"
+        }
+      },
+      "ats_connection_type": {
+        "name": "切替スイッチの接続方式",
+        "state": {
+          "hardwired": "有線",
+          "ism": "ISM 無線"
+        }
+      },
+      "ats_signal_strength": {
+        "name": "切替スイッチの信号強度",
+        "state": {
+          "weak": "弱い",
+          "moderate": "中程度",
+          "strong": "強い"
+        }
+      },
+      "load_module_parameter": {
+        "name": "負荷制御モジュール {name}"
+      },
+      "pim_parameter": {
+        "name": "PIM {name}"
+      },
+      "extra_field": {
+        "name": "{field}"
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "クラウド接続"
+      },
+      "utility_power": {
+        "name": "商用電源"
+      },
+      "on_generator_power": {
+        "name": "発電機から給電中"
+      },
+      "running": {
+        "name": "運転中"
+      },
+      "exercising": {
+        "name": "試運転中"
+      },
+      "ready_to_run": {
+        "name": "運転準備完了"
+      },
+      "not_in_auto": {
+        "name": "Auto 以外"
+      },
+      "oil_pressure_problem": {
+        "name": "油圧"
+      },
+      "maintenance_due": {
+        "name": "メンテナンス期限"
+      },
+      "active_alerts": {
+        "name": "アラート"
+      },
+      "critical_fault": {
+        "name": "重大な故障"
+      },
+      "e_stop": {
+        "name": "非常停止"
+      },
+      "exercise_scheduled": {
+        "name": "試運転予定あり"
+      },
+      "service_agreement": {
+        "name": "保守契約"
+      },
+      "cellular_kit_online": {
+        "name": "セルラーキット"
+      },
+      "wifi_connected": {
+        "name": "Wi-Fi"
+      },
+      "cellular_connected": {
+        "name": "セルラー"
+      },
+      "load_module_connected": {
+        "name": "負荷制御モジュール"
+      },
+      "pim_connected": {
+        "name": "PIM"
+      },
+      "firmware_update_available": {
+        "name": "ファームウェアアップデートあり"
+      },
+      "extra_flag": {
+        "name": "{field}"
+      }
+    },
+    "button": {
+      "start_exercise": {
+        "name": "試運転を開始"
+      },
+      "stop_exercise": {
+        "name": "試運転を停止"
+      },
+      "sync_controller_clock": {
+        "name": "コントローラー時計を同期"
+      },
+      "refresh": {
+        "name": "更新"
+      }
+    },
+    "select": {
+      "exercise_mode": {
+        "name": "試運転モード",
+        "state": {
+          "unloaded": "無負荷",
+          "unloaded_full_speed": "無負荷（フルスピード）",
+          "loaded_full_speed": "負荷あり（フルスピード）",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "exercise_frequency": {
+        "name": "試運転の頻度",
+        "state": {
+          "weekly": "毎週",
+          "every_other_week": "隔週",
+          "monthly": "毎月"
+        }
+      }
+    },
+    "number": {
+      "exercise_duration": {
+        "name": "試運転の継続時間"
+      },
+      "load_module_setting": {
+        "name": "負荷制御モジュール {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "datetime": {
+      "next_exercise_start": {
+        "name": "次回の試運転開始日時"
+      }
+    },
+    "switch": {
+      "notify_shutdowns": {
+        "name": "シャットダウン通知"
+      },
+      "notify_warnings": {
+        "name": "警告通知"
+      },
+      "notify_running": {
+        "name": "発電機運転通知"
+      },
+      "notify_notices": {
+        "name": "一般のお知らせ"
+      },
+      "notify_connection": {
+        "name": "接続通知"
+      },
+      "notify_maintenance": {
+        "name": "メンテナンスリマインダー"
+      },
+      "notify_long_running": {
+        "name": "長時間運転通知"
+      },
+      "notify_emails": {
+        "name": "メール通知"
+      },
+      "notify_push": {
+        "name": "プッシュ通知"
+      },
+      "notify_other": {
+        "name": "{name} 通知"
+      },
+      "auto_firmware_update": {
+        "name": "ファームウェア自動アップデート"
+      },
+      "load_module_setting": {
+        "name": "負荷制御モジュール {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "text": {
+      "generator_name": {
+        "name": "発電機名"
+      },
+      "load_module_setting": {
+        "name": "負荷制御モジュール {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "アクティビティ",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "none": "なし",
+              "status": "ステータス",
+              "warning": "警告",
+              "fault": "故障",
+              "shutdown": "シャットダウン",
+              "notice": "お知らせ",
+              "system_status_change": "システム状態の変化"
+            }
+          }
+        }
+      },
+      "alerts": {
+        "name": "アラート",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "raised": "発生",
+              "cleared": "解除"
+            }
+          }
+        }
+      },
+      "notifications": {
+        "name": "通知",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "shutdown": "シャットダウン",
+              "warning": "警告",
+              "maintenance_notice": "メンテナンスのお知らせ",
+              "long_running_notice": "長時間運転のお知らせ",
+              "notice": "お知らせ",
+              "engine_started_notice": "エンジン始動",
+              "engine_stopped_notice": "エンジン停止",
+              "exercise_started_notice": "試運転開始",
+              "exercise_ended_notice": "試運転終了",
+              "online_notice": "オンラインに復帰",
+              "offline_notice": "オフラインに移行"
+            }
+          }
+        }
+      },
+      "power": {
+        "name": "電源イベント",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "utility_lost": "停電",
+              "utility_restored": "復電",
+              "generator_started": "発電機始動",
+              "generator_stopped": "発電機停止",
+              "transferred_to_generator": "負荷を発電機に切替",
+              "transferred_to_utility": "負荷を商用電源に切替"
+            }
+          }
+        }
+      }
+    },
+    "calendar": {
+      "schedule": {
+        "name": "試運転とメンテナンス",
+        "state_attributes": {
+          "message": {
+            "state": {
+              "exercise": "試運転",
+              "last_exercise": "前回の試運転",
+              "maintenance_due": "メンテナンス期限"
+            }
+          },
+          "description": {
+            "state": {
+              "last_exercise": "発電機から報告された直近の試運転です。",
+              "scheduled": "次回の試運転予定です。",
+              "projected": "試運転スケジュールから算出した予定です。",
+              "maintenance_due": "発電機の次回のメンテナンス予定です。"
+            }
+          }
+        }
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "コントローラーファームウェア",
+        "state_attributes": {
+          "release_summary": {
+            "state": {
+              "released": "{date} にリリースされました。",
+              "scheduled": "{date} にインストール予定です。",
+              "auto_update_off": "この発電機ではファームウェアの自動アップデートがオフになっています。"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_generator": {
+      "message": "発電機 {device_id} はこのアカウントに属していません。"
+    },
+    "auth_failed": {
+      "message": "保存されている認証情報が Rehlko に拒否されました。再認証を要求しました。"
+    },
+    "api_error": {
+      "message": "Rehlko サービスがリクエストを拒否しました（HTTP {status}）：{message}"
+    },
+    "unavailable": {
+      "message": "Rehlko サービスを利用できません：{message}"
+    },
+    "offline": {
+      "message": "{name} はオフラインです。再接続されるまでリモート操作は利用できません。"
+    },
+    "e_stop": {
+      "message": "{name} の非常停止が作動しています。発電機本体でリセットするまで、リモート始動とリモート試運転は利用できません。"
+    },
+    "not_ready": {
+      "message": "{name} は運転準備ができていません（ステータス：{status}）。試運転は開始できません。"
+    },
+    "no_scheduling": {
+      "message": "{name} のコントローラーでは、試運転スケジュールのリモート設定を利用できません。"
+    },
+    "empty_note": {
+      "message": "メンテナンスメモが空です。"
+    },
+    "empty_name": {
+      "message": "名前が空です。"
+    },
+    "read_only": {
+      "message": "{name} は読み取り専用です。"
+    },
+    "device_not_found": {
+      "message": "デバイス {device_id} が見つかりませんでした。"
+    },
+    "not_a_generator": {
+      "message": "デバイス {device_id} は Rehlko の発電機ではありません。"
+    },
+    "entry_not_loaded": {
+      "message": "デバイス {device_id} のアカウントが読み込まれていません。"
+    },
+    "no_serial": {
+      "message": "サービスからそのコントローラーのシリアル番号が報告されませんでした。"
+    }
+  },
+  "services": {
+    "start_exercise": {
+      "name": "試運転を開始",
+      "description": "試運転を今すぐ開始します（アプリの「Start an exercise now」に相当）。発電機がオンラインで、Auto になっており、運転準備完了である必要があります。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        },
+        "mode": {
+          "name": "モード",
+          "description": "運転方法です。省略時はスケジュールされた試運転のモードが使用されます。"
+        }
+      }
+    },
+    "stop_exercise": {
+      "name": "試運転を停止",
+      "description": "実行中の試運転を停止します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        }
+      }
+    },
+    "set_exercise_schedule": {
+      "name": "試運転スケジュールを設定",
+      "description": "定期的な試運転を作成または変更します。省略したフィールドは現在の値のままになります。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        },
+        "frequency": {
+          "name": "頻度",
+          "description": "毎週、隔週、毎月のいずれかです。"
+        },
+        "mode": {
+          "name": "モード",
+          "description": "無負荷、無負荷（フルスピード）、負荷あり（フルスピード）、EcoExercise のいずれかです。"
+        },
+        "duration": {
+          "name": "継続時間",
+          "description": "運転時間（分）です。"
+        },
+        "next_start": {
+          "name": "次回の開始日時",
+          "description": "次回の試運転を開始する日時です（日時の指定に対応しているコントローラーのみ）。"
+        }
+      }
+    },
+    "delete_exercise_schedule": {
+      "name": "試運転スケジュールを削除",
+      "description": "定期的な試運転を削除します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        }
+      }
+    },
+    "add_maintenance_note": {
+      "name": "メンテナンスメモを追加",
+      "description": "発電機のメンテナンス履歴に記録を追加します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        },
+        "note": {
+          "name": "メモ",
+          "description": "実施した内容です。"
+        }
+      }
+    },
+    "sync_controller_clock": {
+      "name": "コントローラー時計を同期",
+      "description": "コントローラーの時計を設定します（時刻を指定しない場合は現在時刻）。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        },
+        "timestamp": {
+          "name": "時刻",
+          "description": "設定する時刻です。省略時は現在時刻になります。"
+        }
+      }
+    },
+    "set_peripheral_value": {
+      "name": "負荷制御モジュール / PIM の値を設定",
+      "description": "負荷制御モジュールまたは PIM のパラメーターを 1 つ書き込みます。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        },
+        "definition_id": {
+          "name": "定義 ID",
+          "description": "パラメーターの定義 ID（エンティティの属性）です。"
+        },
+        "value": {
+          "name": "値",
+          "description": "書き込む値です。"
+        }
+      }
+    },
+    "rename_peripheral": {
+      "name": "負荷 / PIM 項目の名前を変更",
+      "description": "負荷制御モジュールまたは PIM のパラメーターの表示名を変更します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        },
+        "definition_id": {
+          "name": "定義 ID",
+          "description": "パラメーターの定義 ID です。"
+        },
+        "name": {
+          "name": "名前",
+          "description": "新しい名前です。"
+        }
+      }
+    },
+    "refresh": {
+      "name": "更新",
+      "description": "アクティビティログとメンテナンス履歴を含むすべてのデータを今すぐポーリングします。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "この発電機のアカウントのみが対象です。省略するとすべてのアカウントが対象になります。"
+        }
+      }
+    },
+    "get_activity_log": {
+      "name": "アクティビティログを取得",
+      "description": "発電機のアクティビティ（イベント）ログを返します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        },
+        "limit": {
+          "name": "上限",
+          "description": "返す項目の最大件数です（新しい順）。"
+        }
+      }
+    },
+    "get_alerts": {
+      "name": "発生中のアラートを取得",
+      "description": "発電機で発生中のアラートを返します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        }
+      }
+    },
+    "get_maintenance_history": {
+      "name": "メンテナンス履歴を取得",
+      "description": "メンテナンスメモとスケジュールを返します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        }
+      }
+    },
+    "get_notifications": {
+      "name": "通知を取得",
+      "description": "発電機に関するアプリの通知を返します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        },
+        "limit": {
+          "name": "上限",
+          "description": "返す通知の最大件数です（新しい順）。"
+        }
+      }
+    },
+    "get_generator_data": {
+      "name": "発電機データを取得",
+      "description": "サービスから送信されたままの、デバイスと詳細情報の生のペイロードを返します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        }
+      }
+    },
+    "get_parameter_definitions": {
+      "name": "パラメーター定義を取得",
+      "description": "コントローラーのパラメーターカタログ（名前、型、範囲、単位）を返します。",
+      "fields": {
+        "device_id": {
+          "name": "発電機",
+          "description": "操作対象の発電機（またはその切替スイッチ）です。"
+        },
+        "kind": {
+          "name": "コントローラー",
+          "description": "発電機のコントローラーか、切替スイッチのコントローラーかを指定します。"
+        }
+      }
+    }
+  }
+}

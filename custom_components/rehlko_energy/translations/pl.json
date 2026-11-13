@@ -1,0 +1,1003 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zaloguj się do Rehlko Energy Management",
+        "description": "Użyj adresu e-mail i hasła, których używasz w aplikacji Energy Mgmt. (dawniej KOHLER Energy Management). Poniższe dane uwierzytelniające aplikacji identyfikują aplikację w usłudze logowania Rehlko; informacje o tym, gdzie je znaleźć, zawiera dokumentacja integracji.",
+        "data": {
+          "username": "Adres e-mail",
+          "password": "Hasło"
+        },
+        "data_description": {
+          "username": "Adres e-mail Twojego konta Rehlko / Kohler Energy Management.",
+          "password": "Przechowywane w Home Assistant, aby integracja mogła zalogować się ponownie po wygaśnięciu sesji."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "Dane uwierzytelniające aplikacji",
+            "description": "Identyfikator klienta OAuth, sekret klienta i klucz API z konfiguracji aplikacji Energy Mgmt.",
+            "data": {
+              "client_id": "Identyfikator klienta OAuth",
+              "client_secret": "Sekret klienta OAuth",
+              "api_key": "Klucz API"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID w pliku konfiguracyjnym aplikacji.",
+              "client_secret": "CLIENT_SECRET w pliku konfiguracyjnym aplikacji.",
+              "api_key": "API_KEY w pliku konfiguracyjnym aplikacji."
+            }
+          }
+        }
+      },
+      "reauth_confirm": {
+        "title": "Zaloguj się ponownie",
+        "description": "Usługa Rehlko ponownie zażądała hasła do konta {username}.",
+        "data": {
+          "password": "Hasło"
+        },
+        "data_description": {
+          "password": "Przechowywane w Home Assistant, aby integracja mogła zalogować się ponownie po wygaśnięciu sesji."
+        }
+      },
+      "reconfigure": {
+        "title": "Zaktualizuj dane uwierzytelniające",
+        "description": "Zaktualizuj hasło lub dane uwierzytelniające aplikacji dla konta {username} (na przykład gdy zmieniła je aktualizacja aplikacji).",
+        "data": {
+          "password": "Hasło"
+        },
+        "data_description": {
+          "password": "Przechowywane w Home Assistant, aby integracja mogła zalogować się ponownie po wygaśnięciu sesji."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "Dane uwierzytelniające aplikacji",
+            "description": "Identyfikator klienta OAuth, sekret klienta i klucz API z konfiguracji aplikacji Energy Mgmt.",
+            "data": {
+              "client_id": "Identyfikator klienta OAuth",
+              "client_secret": "Sekret klienta OAuth",
+              "api_key": "Klucz API"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID w pliku konfiguracyjnym aplikacji.",
+              "client_secret": "Pozostaw puste, aby zachować zapisaną wartość.",
+              "api_key": "Pozostaw puste, aby zachować zapisaną wartość."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Adres e-mail lub hasło nie zostały zaakceptowane.",
+      "sign_in_denied": "Usługa logowania Rehlko odrzuciła logowanie hasłem dla tego konta. Dzieje się tak, gdy konto wymaga uwierzytelniania wieloskładnikowego, którego ta integracja nie może przeprowadzić.",
+      "invalid_app_credentials": "Usługa logowania odrzuciła identyfikator klienta lub sekret klienta aplikacji.",
+      "invalid_api_key": "Zalogowano, ale API odrzuciło żądanie; sprawdź klucz API.",
+      "cannot_connect": "Nie można połączyć się z usługą Rehlko.",
+      "no_generators": "Zalogowano, ale to konto nie ma żadnych agregatów.",
+      "unknown": "Nieoczekiwany błąd; sprawdź logi."
+    },
+    "abort": {
+      "already_configured": "To konto jest już skonfigurowane.",
+      "reauth_successful": "Zalogowano ponownie.",
+      "reconfigure_successful": "Zaktualizowano dane uwierzytelniające.",
+      "wrong_account": "Te dane uwierzytelniające należą do innego konta."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcje Rehlko Energy Management",
+        "data": {
+          "scan_interval": "Interwał odpytywania w stanie gotowości",
+          "active_scan_interval": "Interwał odpytywania podczas pracy lub zaniku zasilania",
+          "feed_interval": "Interwał dziennika aktywności, alertów i powiadomień",
+          "notification_limit": "Liczba powiadomień pobieranych dla każdego agregatu",
+          "sidebar_panel": "Pokaż panel agregatu na pasku bocznym",
+          "extra_diagnostic_entities": "Utwórz encje diagnostyczne dla wszystkich pozostałych pól API"
+        },
+        "data_description": {
+          "scan_interval": "Jak często odczytywać dane agregatu, gdy nie pracuje.",
+          "active_scan_interval": "Stosowany, gdy silnik pracuje, trwa rozruch testowy lub dom jest zasilany z agregatu.",
+          "feed_interval": "Te listy zmieniają się rzadko; dłuższy interwał oznacza mniej żądań.",
+          "notification_limit": "Najnowsze powiadomienia są pobierane w pierwszej kolejności.",
+          "sidebar_panel": "Panel jest widoczny tylko dla administratorów.",
+          "extra_diagnostic_entities": "Są tworzone jako wyłączone: nic, co zgłasza usługa, nie jest ukryte i nic nie jest rejestrowane, dopóki nie włączysz ich na stronie urządzenia."
+        }
+      }
+    }
+  },
+  "selector": {
+    "exercise_mode": {
+      "options": {
+        "unloaded": "Bez obciążenia",
+        "unloaded_full_speed": "Bez obciążenia, pełne obroty",
+        "loaded_full_speed": "Z obciążeniem, pełne obroty",
+        "eco_exercise": "EcoExercise"
+      }
+    },
+    "exercise_frequency": {
+      "options": {
+        "weekly": "Co tydzień",
+        "every_other_week": "Co dwa tygodnie",
+        "monthly": "Co miesiąc"
+      }
+    },
+    "controller_kind": {
+      "options": {
+        "generator": "Agregat",
+        "ats": "Przełącznik zasilania"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "utility_voltage": {
+        "name": "Napięcie sieci"
+      },
+      "generator_voltage": {
+        "name": "Napięcie agregatu"
+      },
+      "generator_load": {
+        "name": "Obciążenie agregatu"
+      },
+      "generator_load_percent": {
+        "name": "Obciążenie agregatu (% znamionowego)"
+      },
+      "energy_produced": {
+        "name": "Wytworzona energia"
+      },
+      "set_output_voltage": {
+        "name": "Znamionowe napięcie wyjściowe"
+      },
+      "power_source": {
+        "name": "Źródło zasilania",
+        "state": {
+          "unknown": "Nieznane",
+          "utility": "Sieć",
+          "generator": "Agregat"
+        }
+      },
+      "engine_speed": {
+        "name": "Obroty silnika"
+      },
+      "engine_frequency": {
+        "name": "Częstotliwość agregatu"
+      },
+      "engine_oil_pressure": {
+        "name": "Ciśnienie oleju"
+      },
+      "engine_coolant_temperature": {
+        "name": "Temperatura płynu chłodzącego"
+      },
+      "lube_oil_temperature": {
+        "name": "Temperatura oleju smarowego"
+      },
+      "engine_compartment_temperature": {
+        "name": "Temperatura komory silnika"
+      },
+      "engine_state": {
+        "name": "Stan silnika",
+        "state": {
+          "off": "Wyłączony",
+          "crank_on": "Rozruch",
+          "crank_pause": "Przerwa w rozruchu",
+          "idle": "Bieg jałowy",
+          "running": "Praca",
+          "cool_down": "Schładzanie",
+          "stopping": "Zatrzymywanie",
+          "shutdown": "Wyłączenie awaryjne",
+          "performing_loaded_test": "Test z obciążeniem",
+          "performing_unloaded_test": "Test bez obciążenia",
+          "performing_variable_speed_exercise": "Rozruch testowy ze zmiennymi obrotami",
+          "performing_loaded_exercise": "Rozruch testowy z obciążeniem",
+          "fuel_priming": "Wstępne podawanie paliwa",
+          "ecm_powered": "ECM zasilany",
+          "fault_cool_down": "Schładzanie po usterce",
+          "standby": "Gotowość",
+          "preheat": "Podgrzewanie wstępne",
+          "performing_unloaded_full_speed_exercise": "Rozruch testowy bez obciążenia, pełne obroty",
+          "performing_full_speed_diagnostics": "Diagnostyka na pełnych obrotach",
+          "unloading": "Odciążanie",
+          "stopped_by_generator_management": "Zatrzymany przez zarządzanie agregatami",
+          "synchronizing": "Synchronizacja",
+          "protective_relay_tripped_contactor": "Zadziałanie przekaźnika zabezpieczeniowego",
+          "start_delay": "Opóźnienie rozruchu",
+          "stationary_regen": "Regeneracja stacjonarna",
+          "choke": "Ssanie",
+          "performing_eco_cycle": "Rozruch testowy EcoExercise"
+        }
+      },
+      "fuel_level": {
+        "name": "Poziom paliwa"
+      },
+      "battery_voltage": {
+        "name": "Napięcie akumulatora"
+      },
+      "controller_temperature": {
+        "name": "Temperatura sterownika"
+      },
+      "controller_clock": {
+        "name": "Zegar sterownika"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "ready_to_run": "Gotowość do pracy",
+          "shutdown": "Wyłączenie awaryjne",
+          "switch_state_off": "Wyłączony",
+          "running": "Praca",
+          "running_exercise": "Rozruch testowy",
+          "offline": "Offline"
+        }
+      },
+      "switch_state": {
+        "name": "Przełącznik trybu",
+        "state": {
+          "off": "Wyłączony",
+          "auto": "Auto",
+          "manual": "Ręczny"
+        }
+      },
+      "shutdown_reason": {
+        "name": "Przyczyna wyłączenia awaryjnego"
+      },
+      "alert_count": {
+        "name": "Aktywne alerty"
+      },
+      "total_runtime": {
+        "name": "Łączny czas pracy"
+      },
+      "total_operation": {
+        "name": "Łączny czas działania"
+      },
+      "runtime_since_maintenance": {
+        "name": "Czas pracy od konserwacji"
+      },
+      "last_run": {
+        "name": "Ostatnie uruchomienie"
+      },
+      "last_maintenance": {
+        "name": "Ostatnia konserwacja"
+      },
+      "next_maintenance": {
+        "name": "Następna konserwacja"
+      },
+      "maintenance_period": {
+        "name": "Interwał konserwacji"
+      },
+      "last_maintenance_note": {
+        "name": "Ostatnia notatka z konserwacji"
+      },
+      "next_exercise": {
+        "name": "Następny rozruch testowy"
+      },
+      "last_exercise_start": {
+        "name": "Początek ostatniego rozruchu testowego"
+      },
+      "last_exercise_end": {
+        "name": "Koniec ostatniego rozruchu testowego"
+      },
+      "exercise_running_mode": {
+        "name": "Trwający rozruch testowy",
+        "state": {
+          "none": "Brak",
+          "unloaded": "Bez obciążenia",
+          "unloaded_full_speed": "Bez obciążenia, pełne obroty",
+          "loaded_full_speed": "Z obciążeniem, pełne obroty",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "last_event": {
+        "name": "Ostatnia aktywność"
+      },
+      "last_notification": {
+        "name": "Ostatnie powiadomienie"
+      },
+      "weather_temperature": {
+        "name": "Temperatura zewnętrzna"
+      },
+      "weather_condition": {
+        "name": "Pogoda",
+        "state": {
+          "clear_sky": "Bezchmurnie",
+          "few_clouds": "Małe zachmurzenie",
+          "scattered_clouds": "Umiarkowane zachmurzenie",
+          "broken_clouds": "Duże zachmurzenie",
+          "shower_rain": "Przelotne opady",
+          "rain": "Deszcz",
+          "thunderstorm": "Burza",
+          "snow": "Śnieg",
+          "mist": "Zamglenie",
+          "unknown": "Nieznana"
+        }
+      },
+      "model": {
+        "name": "Model"
+      },
+      "product": {
+        "name": "Produkt sterownika"
+      },
+      "controller_type": {
+        "name": "Typ sterownika"
+      },
+      "firmware_version": {
+        "name": "Wersja oprogramowania układowego"
+      },
+      "current_firmware": {
+        "name": "Kompilacja oprogramowania układowego"
+      },
+      "fuel_type": {
+        "name": "Rodzaj paliwa",
+        "state": {
+          "natural_gas": "Gaz ziemny",
+          "liquid_propane": "Ciekły propan (LP)",
+          "gasoline": "Benzyna",
+          "diesel": "Olej napędowy",
+          "unknown_undefined": "Nieznany"
+        }
+      },
+      "cooling_type": {
+        "name": "Chłodzenie",
+        "state": {
+          "unknown": "Nieznane",
+          "air": "Powietrzne",
+          "liquid": "Cieczowe"
+        }
+      },
+      "connection_type": {
+        "name": "Połączenie",
+        "state": {
+          "unknown": "Nieznane",
+          "ethernet": "Ethernet",
+          "kohler_wifi": "Wi-Fi Kohler",
+          "other_wifi": "Inne Wi-Fi",
+          "cellular": "Sieć komórkowa",
+          "kohler_cell_kit": "Zestaw komórkowy Kohler"
+        }
+      },
+      "device_ip_address": {
+        "name": "Adres IP"
+      },
+      "server_ip_address": {
+        "name": "Adres IP serwera"
+      },
+      "mac_address": {
+        "name": "Adres MAC"
+      },
+      "last_connected": {
+        "name": "Ostatnie połączenie"
+      },
+      "status_updated": {
+        "name": "Aktualizacja statusu"
+      },
+      "parameters_updated": {
+        "name": "Aktualizacja parametrów"
+      },
+      "uptime_percent": {
+        "name": "Dostępność połączenia"
+      },
+      "remote_reset_counter": {
+        "name": "Odliczanie do zdalnego resetu"
+      },
+      "wifi_strength": {
+        "name": "Sygnał Wi-Fi",
+        "state": {
+          "weak": "Słaby",
+          "moderate": "Średni",
+          "strong": "Silny"
+        }
+      },
+      "cellular_strength": {
+        "name": "Sygnał sieci komórkowej",
+        "state": {
+          "weak": "Słaby",
+          "moderate": "Średni",
+          "strong": "Silny"
+        }
+      },
+      "site_address": {
+        "name": "Adres instalacji"
+      },
+      "dealer": {
+        "name": "Dealer"
+      },
+      "service_agreement_status": {
+        "name": "Umowa serwisowa",
+        "state": {
+          "active": "Aktywna",
+          "expired": "Wygasła",
+          "missing_data": "Brak danych",
+          "none": "Brak"
+        }
+      },
+      "cellular_data_status": {
+        "name": "Dane komórkowe",
+        "state": {
+          "active": "Aktywne",
+          "near_data_limit": "Blisko limitu danych",
+          "reached_data_limit": "Osiągnięto limit danych",
+          "unknown": "Nieznane"
+        }
+      },
+      "cellular_data_used": {
+        "name": "Wykorzystane dane komórkowe"
+      },
+      "cellular_expiry": {
+        "name": "Wygaśnięcie abonamentu komórkowego"
+      },
+      "cellular_installed": {
+        "name": "Instalacja zestawu komórkowego"
+      },
+      "cell_kit_payment_status": {
+        "name": "Płatność za abonament komórkowy",
+        "state": {
+          "paid": "Opłacono",
+          "in_progress": "W toku",
+          "renewal_failed": "Odnowienie nieudane",
+          "unknown": "Nieznana"
+        }
+      },
+      "cell_data_remaining": {
+        "name": "Pozostałe dane komórkowe"
+      },
+      "scheduled_firmware_update": {
+        "name": "Zaplanowana aktualizacja oprogramowania układowego"
+      },
+      "install_progress": {
+        "name": "Postęp instalacji"
+      },
+      "ats_power_source": {
+        "name": "Położenie przełącznika zasilania",
+        "state": {
+          "unknown": "Nieznane",
+          "utility": "Sieć",
+          "generator": "Agregat"
+        }
+      },
+      "ats_connection_type": {
+        "name": "Łącze przełącznika zasilania",
+        "state": {
+          "hardwired": "Przewodowe",
+          "ism": "Radio ISM"
+        }
+      },
+      "ats_signal_strength": {
+        "name": "Sygnał przełącznika zasilania",
+        "state": {
+          "weak": "Słaby",
+          "moderate": "Średni",
+          "strong": "Silny"
+        }
+      },
+      "load_module_parameter": {
+        "name": "Moduł odciążania {name}"
+      },
+      "pim_parameter": {
+        "name": "PIM {name}"
+      },
+      "extra_field": {
+        "name": "{field}"
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "Połączenie z chmurą"
+      },
+      "utility_power": {
+        "name": "Zasilanie sieciowe"
+      },
+      "on_generator_power": {
+        "name": "Zasilanie z agregatu"
+      },
+      "running": {
+        "name": "Praca"
+      },
+      "exercising": {
+        "name": "Rozruch testowy"
+      },
+      "ready_to_run": {
+        "name": "Gotowość do pracy"
+      },
+      "not_in_auto": {
+        "name": "Poza trybem Auto"
+      },
+      "oil_pressure_problem": {
+        "name": "Ciśnienie oleju"
+      },
+      "maintenance_due": {
+        "name": "Wymagana konserwacja"
+      },
+      "active_alerts": {
+        "name": "Alerty"
+      },
+      "critical_fault": {
+        "name": "Usterka krytyczna"
+      },
+      "e_stop": {
+        "name": "Zatrzymanie awaryjne"
+      },
+      "exercise_scheduled": {
+        "name": "Zaplanowany rozruch testowy"
+      },
+      "service_agreement": {
+        "name": "Umowa serwisowa"
+      },
+      "cellular_kit_online": {
+        "name": "Zestaw komórkowy"
+      },
+      "wifi_connected": {
+        "name": "Wi-Fi"
+      },
+      "cellular_connected": {
+        "name": "Sieć komórkowa"
+      },
+      "load_module_connected": {
+        "name": "Moduł odciążania"
+      },
+      "pim_connected": {
+        "name": "PIM"
+      },
+      "firmware_update_available": {
+        "name": "Dostępna aktualizacja oprogramowania układowego"
+      },
+      "extra_flag": {
+        "name": "{field}"
+      }
+    },
+    "button": {
+      "start_exercise": {
+        "name": "Rozpocznij rozruch testowy"
+      },
+      "stop_exercise": {
+        "name": "Zatrzymaj rozruch testowy"
+      },
+      "sync_controller_clock": {
+        "name": "Synchronizuj zegar sterownika"
+      },
+      "refresh": {
+        "name": "Odśwież"
+      }
+    },
+    "select": {
+      "exercise_mode": {
+        "name": "Tryb rozruchu testowego",
+        "state": {
+          "unloaded": "Bez obciążenia",
+          "unloaded_full_speed": "Bez obciążenia, pełne obroty",
+          "loaded_full_speed": "Z obciążeniem, pełne obroty",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "exercise_frequency": {
+        "name": "Częstotliwość rozruchów testowych",
+        "state": {
+          "weekly": "Co tydzień",
+          "every_other_week": "Co dwa tygodnie",
+          "monthly": "Co miesiąc"
+        }
+      }
+    },
+    "number": {
+      "exercise_duration": {
+        "name": "Czas trwania rozruchu testowego"
+      },
+      "load_module_setting": {
+        "name": "Moduł odciążania {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "datetime": {
+      "next_exercise_start": {
+        "name": "Początek następnego rozruchu testowego"
+      }
+    },
+    "switch": {
+      "notify_shutdowns": {
+        "name": "Powiadomienia o wyłączeniach awaryjnych"
+      },
+      "notify_warnings": {
+        "name": "Powiadomienia o ostrzeżeniach"
+      },
+      "notify_running": {
+        "name": "Powiadomienia o pracy agregatu"
+      },
+      "notify_notices": {
+        "name": "Powiadomienia ogólne"
+      },
+      "notify_connection": {
+        "name": "Powiadomienia o połączeniu"
+      },
+      "notify_maintenance": {
+        "name": "Przypomnienia o konserwacji"
+      },
+      "notify_long_running": {
+        "name": "Powiadomienia o długiej pracy"
+      },
+      "notify_emails": {
+        "name": "Powiadomienia e-mail"
+      },
+      "notify_push": {
+        "name": "Powiadomienia push"
+      },
+      "notify_other": {
+        "name": "Powiadomienia: {name}"
+      },
+      "auto_firmware_update": {
+        "name": "Automatyczne aktualizacje oprogramowania układowego"
+      },
+      "load_module_setting": {
+        "name": "Moduł odciążania {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "text": {
+      "generator_name": {
+        "name": "Nazwa agregatu"
+      },
+      "load_module_setting": {
+        "name": "Moduł odciążania {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "Aktywność",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "none": "Brak",
+              "status": "Status",
+              "warning": "Ostrzeżenie",
+              "fault": "Usterka",
+              "shutdown": "Wyłączenie awaryjne",
+              "notice": "Informacja",
+              "system_status_change": "Zmiana statusu systemu"
+            }
+          }
+        }
+      },
+      "alerts": {
+        "name": "Alert",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "raised": "Zgłoszono",
+              "cleared": "Skasowano"
+            }
+          }
+        }
+      },
+      "notifications": {
+        "name": "Powiadomienie",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "shutdown": "Wyłączenie awaryjne",
+              "warning": "Ostrzeżenie",
+              "maintenance_notice": "Informacja o konserwacji",
+              "long_running_notice": "Informacja o długiej pracy",
+              "notice": "Informacja",
+              "engine_started_notice": "Uruchomiono silnik",
+              "engine_stopped_notice": "Zatrzymano silnik",
+              "exercise_started_notice": "Rozpoczęto rozruch testowy",
+              "exercise_ended_notice": "Zakończono rozruch testowy",
+              "online_notice": "Ponownie online",
+              "offline_notice": "Przejście w tryb offline"
+            }
+          }
+        }
+      },
+      "power": {
+        "name": "Zdarzenie zasilania",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "utility_lost": "Zanik zasilania sieciowego",
+              "utility_restored": "Powrót zasilania sieciowego",
+              "generator_started": "Uruchomiono agregat",
+              "generator_stopped": "Zatrzymano agregat",
+              "transferred_to_generator": "Przełączono obciążenie na agregat",
+              "transferred_to_utility": "Przełączono obciążenie na sieć"
+            }
+          }
+        }
+      }
+    },
+    "calendar": {
+      "schedule": {
+        "name": "Rozruchy testowe i konserwacja",
+        "state_attributes": {
+          "message": {
+            "state": {
+              "exercise": "Rozruch testowy",
+              "last_exercise": "Ostatni rozruch testowy",
+              "maintenance_due": "Wymagana konserwacja"
+            }
+          },
+          "description": {
+            "state": {
+              "last_exercise": "Ostatni rozruch testowy zgłoszony przez agregat.",
+              "scheduled": "Następny zaplanowany rozruch testowy.",
+              "projected": "Prognoza na podstawie harmonogramu rozruchów testowych.",
+              "maintenance_due": "Następna zaplanowana konserwacja agregatu."
+            }
+          }
+        }
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Oprogramowanie układowe sterownika",
+        "state_attributes": {
+          "release_summary": {
+            "state": {
+              "released": "Wydano: {date}.",
+              "scheduled": "Instalację zaplanowano na: {date}.",
+              "auto_update_off": "Automatyczne aktualizacje oprogramowania układowego są wyłączone dla tego agregatu."
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_generator": {
+      "message": "Agregat {device_id} nie należy do tego konta."
+    },
+    "auth_failed": {
+      "message": "Usługa Rehlko odrzuciła zapisane dane uwierzytelniające; zażądano ponownego uwierzytelnienia."
+    },
+    "api_error": {
+      "message": "Usługa Rehlko odrzuciła żądanie (HTTP {status}): {message}"
+    },
+    "unavailable": {
+      "message": "Usługa Rehlko jest niedostępna: {message}"
+    },
+    "offline": {
+      "message": "Urządzenie {name} jest offline; zdalne akcje będą niedostępne do czasu ponownego połączenia."
+    },
+    "e_stop": {
+      "message": "Na urządzeniu {name} aktywne jest zatrzymanie awaryjne. Zdalne uruchamianie i zdalny rozruch testowy będą niedostępne do czasu jego zresetowania przy agregacie."
+    },
+    "not_ready": {
+      "message": "Urządzenie {name} nie jest gotowe do pracy (status: {status}); rozpoczęcie rozruchu testowego jest zablokowane."
+    },
+    "no_scheduling": {
+      "message": "Zdalne planowanie rozruchów testowych nie jest dostępne dla sterownika urządzenia {name}."
+    },
+    "empty_note": {
+      "message": "Notatka z konserwacji jest pusta."
+    },
+    "empty_name": {
+      "message": "Nazwa jest pusta."
+    },
+    "read_only": {
+      "message": "Parametr {name} jest tylko do odczytu."
+    },
+    "device_not_found": {
+      "message": "Nie znaleziono urządzenia {device_id}."
+    },
+    "not_a_generator": {
+      "message": "Urządzenie {device_id} nie jest agregatem Rehlko."
+    },
+    "entry_not_loaded": {
+      "message": "Konto urządzenia {device_id} nie jest załadowane."
+    },
+    "no_serial": {
+      "message": "Usługa nie podała numeru seryjnego tego sterownika."
+    }
+  },
+  "services": {
+    "start_exercise": {
+      "name": "Rozpocznij rozruch testowy",
+      "description": "Rozpoczyna rozruch testowy natychmiast (w aplikacji: „Start an exercise now”). Agregat musi być online, w trybie Auto i gotowy do pracy.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        },
+        "mode": {
+          "name": "Tryb",
+          "description": "Sposób wykonania; domyślnie tryb zaplanowanego rozruchu testowego."
+        }
+      }
+    },
+    "stop_exercise": {
+      "name": "Zatrzymaj rozruch testowy",
+      "description": "Zatrzymuje trwający rozruch testowy.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        }
+      }
+    },
+    "set_exercise_schedule": {
+      "name": "Ustaw harmonogram rozruchów testowych",
+      "description": "Tworzy lub zmienia cykliczny rozruch testowy. Pominięte pola zachowują bieżącą wartość.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        },
+        "frequency": {
+          "name": "Częstotliwość",
+          "description": "Co tydzień, co dwa tygodnie lub co miesiąc."
+        },
+        "mode": {
+          "name": "Tryb",
+          "description": "Bez obciążenia, bez obciążenia na pełnych obrotach, z obciążeniem na pełnych obrotach lub EcoExercise."
+        },
+        "duration": {
+          "name": "Czas trwania",
+          "description": "Czas pracy w minutach."
+        },
+        "next_start": {
+          "name": "Następny start",
+          "description": "Termin rozpoczęcia następnego rozruchu testowego (tylko w sterownikach, które pozwalają go wybrać)."
+        }
+      }
+    },
+    "delete_exercise_schedule": {
+      "name": "Usuń harmonogram rozruchów testowych",
+      "description": "Usuwa cykliczny rozruch testowy.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        }
+      }
+    },
+    "add_maintenance_note": {
+      "name": "Dodaj notatkę z konserwacji",
+      "description": "Dodaje wpis do historii konserwacji agregatu.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        },
+        "note": {
+          "name": "Notatka",
+          "description": "Co zostało zrobione."
+        }
+      }
+    },
+    "sync_controller_clock": {
+      "name": "Synchronizuj zegar sterownika",
+      "description": "Ustawia zegar sterownika (na bieżący czas, o ile nie podano innego).",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        },
+        "timestamp": {
+          "name": "Czas",
+          "description": "Czas do ustawienia; domyślnie bieżący."
+        }
+      }
+    },
+    "set_peripheral_value": {
+      "name": "Ustaw wartość modułu odciążania / PIM",
+      "description": "Zapisuje jeden parametr modułu odciążania lub PIM.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        },
+        "definition_id": {
+          "name": "Identyfikator definicji",
+          "description": "Identyfikator definicji parametru (atrybut encji)."
+        },
+        "value": {
+          "name": "Wartość",
+          "description": "Wartość do zapisania."
+        }
+      }
+    },
+    "rename_peripheral": {
+      "name": "Zmień nazwę elementu modułu odciążania / PIM",
+      "description": "Zmienia wyświetlaną nazwę parametru modułu odciążania lub PIM.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        },
+        "definition_id": {
+          "name": "Identyfikator definicji",
+          "description": "Identyfikator definicji parametru."
+        },
+        "name": {
+          "name": "Nazwa",
+          "description": "Nowa nazwa."
+        }
+      }
+    },
+    "refresh": {
+      "name": "Odśwież",
+      "description": "Odpytuje teraz wszystko, w tym dziennik aktywności i historię konserwacji.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Tylko konto tego agregatu; w razie pominięcia wszystkie konta."
+        }
+      }
+    },
+    "get_activity_log": {
+      "name": "Pobierz dziennik aktywności",
+      "description": "Zwraca dziennik aktywności (zdarzeń) agregatu.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "Maksymalna liczba zwracanych wpisów, od najnowszych."
+        }
+      }
+    },
+    "get_alerts": {
+      "name": "Pobierz aktywne alerty",
+      "description": "Zwraca aktywne alerty agregatu.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        }
+      }
+    },
+    "get_maintenance_history": {
+      "name": "Pobierz historię konserwacji",
+      "description": "Zwraca notatki z konserwacji i jej harmonogram.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        }
+      }
+    },
+    "get_notifications": {
+      "name": "Pobierz powiadomienia",
+      "description": "Zwraca powiadomienia aplikacji dotyczące agregatu.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "Maksymalna liczba zwracanych powiadomień, od najnowszych."
+        }
+      }
+    },
+    "get_generator_data": {
+      "name": "Pobierz dane agregatu",
+      "description": "Zwraca surowe dane urządzenia i jego szczegółów w postaci przesłanej przez usługę.",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        }
+      }
+    },
+    "get_parameter_definitions": {
+      "name": "Pobierz definicje parametrów",
+      "description": "Zwraca katalog parametrów sterownika (nazwy, typy, zakresy, jednostki).",
+      "fields": {
+        "device_id": {
+          "name": "Agregat",
+          "description": "Agregat (lub jego przełącznik zasilania), którego dotyczy akcja."
+        },
+        "kind": {
+          "name": "Sterownik",
+          "description": "Sterownik agregatu lub przełącznika zasilania."
+        }
+      }
+    }
+  }
+}

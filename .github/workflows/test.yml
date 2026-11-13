@@ -1,0 +1,71 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  workflow_call: # release.yml runs these checks before publishing
+
+permissions: {}
+
+jobs:
+  pytest:
+    name: pytest (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # What anyone keeping Home Assistant up to date runs — unpinned on purpose, so a
+          # Home Assistant release that breaks the integration fails here first.
+          - name: latest Home Assistant
+            harness: pytest-homeassistant-custom-component
+            python: "3.14"
+          # The oldest version supported, as in hacs.json.
+          - name: Home Assistant 2026.2
+            harness: pytest-homeassistant-custom-component==0.13.316
+            python: "3.13"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt "${{ matrix.harness }}"
+
+      # Exercise real setup/reload/unload, HTTP and WebSocket behavior as well as units.
+      - name: Run tests
+        run: >-
+          python -m pytest tests/ -q
+          --cov=custom_components/rehlko_energy
+          --cov-report=term-missing:skip-covered --cov-fail-under=60
+
+  lint:
+    name: Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
+
+  translations:
+    name: Translations are built
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      # strings.json and every file in translations/ are generated from the script and the
+      # catalogues in scripts/locales/. Fail if one is stale, if a catalogue or a panel locale
+      # has an unknown key or mismatched placeholders, or if a language lacks either half.
+      - name: Check generated files and catalogues
+        run: python scripts/build_translations.py --check

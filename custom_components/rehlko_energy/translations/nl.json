@@ -1,0 +1,1003 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Inloggen bij Rehlko Energy Management",
+        "description": "Gebruik het e-mailadres en wachtwoord waarmee je inlogt in de app Energy Mgmt. (voorheen KOHLER Energy Management). Met de app-inloggegevens hieronder identificeert de app zich bij de inlogdienst van Rehlko; in de documentatie van de integratie staat waar je ze kunt vinden.",
+        "data": {
+          "username": "E-mail",
+          "password": "Wachtwoord"
+        },
+        "data_description": {
+          "username": "Het e-mailadres van je Rehlko / Kohler Energy Management-account.",
+          "password": "Wordt opgeslagen in Home Assistant, zodat de integratie opnieuw kan inloggen wanneer de sessie verloopt."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "App-inloggegevens",
+            "description": "De OAuth-client-ID, het clientgeheim en de API-sleutel uit de configuratie van de app Energy Mgmt.",
+            "data": {
+              "client_id": "OAuth-client-ID",
+              "client_secret": "OAuth-clientgeheim",
+              "api_key": "API-sleutel"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID in het configuratiebestand van de app.",
+              "client_secret": "CLIENT_SECRET in het configuratiebestand van de app.",
+              "api_key": "API_KEY in het configuratiebestand van de app."
+            }
+          }
+        }
+      },
+      "reauth_confirm": {
+        "title": "Opnieuw inloggen",
+        "description": "Rehlko vraagt opnieuw om het wachtwoord voor {username}.",
+        "data": {
+          "password": "Wachtwoord"
+        },
+        "data_description": {
+          "password": "Wordt opgeslagen in Home Assistant, zodat de integratie opnieuw kan inloggen wanneer de sessie verloopt."
+        }
+      },
+      "reconfigure": {
+        "title": "Inloggegevens bijwerken",
+        "description": "Werk het wachtwoord of de app-inloggegevens voor {username} bij (bijvoorbeeld nadat ze door een app-update zijn gewijzigd).",
+        "data": {
+          "password": "Wachtwoord"
+        },
+        "data_description": {
+          "password": "Wordt opgeslagen in Home Assistant, zodat de integratie opnieuw kan inloggen wanneer de sessie verloopt."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "App-inloggegevens",
+            "description": "De OAuth-client-ID, het clientgeheim en de API-sleutel uit de configuratie van de app Energy Mgmt.",
+            "data": {
+              "client_id": "OAuth-client-ID",
+              "client_secret": "OAuth-clientgeheim",
+              "api_key": "API-sleutel"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID in het configuratiebestand van de app.",
+              "client_secret": "Laat leeg om de opgeslagen waarde te behouden.",
+              "api_key": "Laat leeg om de opgeslagen waarde te behouden."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Het e-mailadres of wachtwoord is niet geaccepteerd.",
+      "sign_in_denied": "De aanmeldservice van Rehlko heeft het inloggen met een wachtwoord voor dit account geweigerd. Dat gebeurt wanneer het account meervoudige verificatie vereist, die deze integratie niet kan uitvoeren.",
+      "invalid_app_credentials": "De inlogdienst heeft de client-ID of het clientgeheim van de app geweigerd.",
+      "invalid_api_key": "Ingelogd, maar de API heeft het verzoek geweigerd; controleer de API-sleutel.",
+      "cannot_connect": "Kan de Rehlko-dienst niet bereiken.",
+      "no_generators": "Ingelogd, maar dit account heeft geen generatoren.",
+      "unknown": "Onverwachte fout; zie de logboeken."
+    },
+    "abort": {
+      "already_configured": "Dit account is al geconfigureerd.",
+      "reauth_successful": "Opnieuw ingelogd.",
+      "reconfigure_successful": "Inloggegevens bijgewerkt.",
+      "wrong_account": "Die inloggegevens horen bij een ander account."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opties voor Rehlko Energy Management",
+        "data": {
+          "scan_interval": "Polling-interval in stand-by",
+          "active_scan_interval": "Polling-interval tijdens draaien of bij stroomuitval",
+          "feed_interval": "Interval voor activiteitenlogboek, alarmen en notificaties",
+          "notification_limit": "Op te halen notificaties per generator",
+          "sidebar_panel": "Het paneel Generator in de zijbalk tonen",
+          "extra_diagnostic_entities": "Diagnostische entiteiten aanmaken voor alle overige API-velden"
+        },
+        "data_description": {
+          "scan_interval": "Hoe vaak de generator wordt uitgelezen wanneer deze niet actief is.",
+          "active_scan_interval": "Wordt gebruikt terwijl de motor draait, tijdens een testrun of wanneer de woning op generatorstroom draait.",
+          "feed_interval": "Deze lijsten veranderen zelden; een langer interval betekent minder verzoeken.",
+          "notification_limit": "De nieuwste notificaties worden als eerste opgehaald.",
+          "sidebar_panel": "Het paneel is alleen zichtbaar voor beheerders.",
+          "extra_diagnostic_entities": "Ze worden uitgeschakeld aangemaakt: niets wat de dienst meldt blijft verborgen en er wordt niets opgeslagen totdat je ze inschakelt op de apparaatpagina."
+        }
+      }
+    }
+  },
+  "selector": {
+    "exercise_mode": {
+      "options": {
+        "unloaded": "Onbelast",
+        "unloaded_full_speed": "Onbelast, vol toerental",
+        "loaded_full_speed": "Belast, vol toerental",
+        "eco_exercise": "EcoExercise"
+      }
+    },
+    "exercise_frequency": {
+      "options": {
+        "weekly": "Wekelijks",
+        "every_other_week": "Om de week",
+        "monthly": "Maandelijks"
+      }
+    },
+    "controller_kind": {
+      "options": {
+        "generator": "Generator",
+        "ats": "Omschakelaar"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "utility_voltage": {
+        "name": "Netspanning"
+      },
+      "generator_voltage": {
+        "name": "Generatorspanning"
+      },
+      "generator_load": {
+        "name": "Generatorbelasting"
+      },
+      "generator_load_percent": {
+        "name": "Generatorbelasting (van nominaal)"
+      },
+      "energy_produced": {
+        "name": "Geproduceerde energie"
+      },
+      "set_output_voltage": {
+        "name": "Nominale uitgangsspanning"
+      },
+      "power_source": {
+        "name": "Stroombron",
+        "state": {
+          "unknown": "Onbekend",
+          "utility": "Net",
+          "generator": "Generator"
+        }
+      },
+      "engine_speed": {
+        "name": "Motortoerental"
+      },
+      "engine_frequency": {
+        "name": "Generatorfrequentie"
+      },
+      "engine_oil_pressure": {
+        "name": "Oliedruk"
+      },
+      "engine_coolant_temperature": {
+        "name": "Koelvloeistoftemperatuur"
+      },
+      "lube_oil_temperature": {
+        "name": "Smeerolietemperatuur"
+      },
+      "engine_compartment_temperature": {
+        "name": "Temperatuur motorruimte"
+      },
+      "engine_state": {
+        "name": "Motorstatus",
+        "state": {
+          "off": "Uit",
+          "crank_on": "Starten",
+          "crank_pause": "Startpauze",
+          "idle": "Stationair",
+          "running": "Draait",
+          "cool_down": "Afkoelen",
+          "stopping": "Stoppen",
+          "shutdown": "Uitschakeling",
+          "performing_loaded_test": "Belaste test",
+          "performing_unloaded_test": "Onbelaste test",
+          "performing_variable_speed_exercise": "Testrun met variabel toerental",
+          "performing_loaded_exercise": "Belaste testrun",
+          "fuel_priming": "Brandstof voorpompen",
+          "ecm_powered": "ECM ingeschakeld",
+          "fault_cool_down": "Afkoelen na storing",
+          "standby": "Stand-by",
+          "preheat": "Voorgloeien",
+          "performing_unloaded_full_speed_exercise": "Onbelaste testrun op vol toerental",
+          "performing_full_speed_diagnostics": "Diagnose op vol toerental",
+          "unloading": "Ontlasten",
+          "stopped_by_generator_management": "Gestopt door generatorbeheer",
+          "synchronizing": "Synchroniseren",
+          "protective_relay_tripped_contactor": "Beveiligingsrelais aangesproken",
+          "start_delay": "Startvertraging",
+          "stationary_regen": "Stationaire regeneratie",
+          "choke": "Choke",
+          "performing_eco_cycle": "EcoExercise-testrun"
+        }
+      },
+      "fuel_level": {
+        "name": "Brandstofniveau"
+      },
+      "battery_voltage": {
+        "name": "Accuspanning"
+      },
+      "controller_temperature": {
+        "name": "Controllertemperatuur"
+      },
+      "controller_clock": {
+        "name": "Controllerklok"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "ready_to_run": "Bedrijfsklaar",
+          "shutdown": "Uitschakeling",
+          "switch_state_off": "Schakelaar uit",
+          "running": "Draait",
+          "running_exercise": "Testrun actief",
+          "offline": "Offline"
+        }
+      },
+      "switch_state": {
+        "name": "Modusschakelaar",
+        "state": {
+          "off": "Uit",
+          "auto": "Auto",
+          "manual": "Handmatig"
+        }
+      },
+      "shutdown_reason": {
+        "name": "Reden van uitschakeling"
+      },
+      "alert_count": {
+        "name": "Actieve alarmen"
+      },
+      "total_runtime": {
+        "name": "Totale draaitijd"
+      },
+      "total_operation": {
+        "name": "Totale bedrijfstijd"
+      },
+      "runtime_since_maintenance": {
+        "name": "Draaitijd sinds onderhoud"
+      },
+      "last_run": {
+        "name": "Laatst gedraaid"
+      },
+      "last_maintenance": {
+        "name": "Laatste onderhoud"
+      },
+      "next_maintenance": {
+        "name": "Volgend onderhoud"
+      },
+      "maintenance_period": {
+        "name": "Onderhoudsinterval"
+      },
+      "last_maintenance_note": {
+        "name": "Laatste onderhoudsnotitie"
+      },
+      "next_exercise": {
+        "name": "Volgende testrun"
+      },
+      "last_exercise_start": {
+        "name": "Laatste testrun gestart"
+      },
+      "last_exercise_end": {
+        "name": "Laatste testrun beëindigd"
+      },
+      "exercise_running_mode": {
+        "name": "Lopende testrun",
+        "state": {
+          "none": "Geen",
+          "unloaded": "Onbelast",
+          "unloaded_full_speed": "Onbelast, vol toerental",
+          "loaded_full_speed": "Belast, vol toerental",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "last_event": {
+        "name": "Laatste activiteit"
+      },
+      "last_notification": {
+        "name": "Laatste notificatie"
+      },
+      "weather_temperature": {
+        "name": "Buitentemperatuur"
+      },
+      "weather_condition": {
+        "name": "Weer",
+        "state": {
+          "clear_sky": "Onbewolkt",
+          "few_clouds": "Licht bewolkt",
+          "scattered_clouds": "Half bewolkt",
+          "broken_clouds": "Zwaar bewolkt",
+          "shower_rain": "Buien",
+          "rain": "Regen",
+          "thunderstorm": "Onweer",
+          "snow": "Sneeuw",
+          "mist": "Nevel",
+          "unknown": "Onbekend"
+        }
+      },
+      "model": {
+        "name": "Model"
+      },
+      "product": {
+        "name": "Controllerproduct"
+      },
+      "controller_type": {
+        "name": "Controllertype"
+      },
+      "firmware_version": {
+        "name": "Firmwareversie"
+      },
+      "current_firmware": {
+        "name": "Firmwarebuild"
+      },
+      "fuel_type": {
+        "name": "Brandstoftype",
+        "state": {
+          "natural_gas": "Aardgas",
+          "liquid_propane": "Vloeibaar propaan (LP)",
+          "gasoline": "Benzine",
+          "diesel": "Diesel",
+          "unknown_undefined": "Onbekend"
+        }
+      },
+      "cooling_type": {
+        "name": "Koeling",
+        "state": {
+          "unknown": "Onbekend",
+          "air": "Lucht",
+          "liquid": "Vloeistof"
+        }
+      },
+      "connection_type": {
+        "name": "Verbinding",
+        "state": {
+          "unknown": "Onbekend",
+          "ethernet": "Ethernet",
+          "kohler_wifi": "Kohler Wi-Fi",
+          "other_wifi": "Andere Wi-Fi",
+          "cellular": "Mobiel netwerk",
+          "kohler_cell_kit": "Kohler-kit voor mobiel netwerk"
+        }
+      },
+      "device_ip_address": {
+        "name": "IP-adres"
+      },
+      "server_ip_address": {
+        "name": "IP-adres server"
+      },
+      "mac_address": {
+        "name": "MAC-adres"
+      },
+      "last_connected": {
+        "name": "Laatst verbonden"
+      },
+      "status_updated": {
+        "name": "Status bijgewerkt"
+      },
+      "parameters_updated": {
+        "name": "Parameters bijgewerkt"
+      },
+      "uptime_percent": {
+        "name": "Uptime verbinding"
+      },
+      "remote_reset_counter": {
+        "name": "Aftellen reset op afstand"
+      },
+      "wifi_strength": {
+        "name": "Wi-Fi-signaal",
+        "state": {
+          "weak": "Zwak",
+          "moderate": "Matig",
+          "strong": "Sterk"
+        }
+      },
+      "cellular_strength": {
+        "name": "Mobiel signaal",
+        "state": {
+          "weak": "Zwak",
+          "moderate": "Matig",
+          "strong": "Sterk"
+        }
+      },
+      "site_address": {
+        "name": "Locatieadres"
+      },
+      "dealer": {
+        "name": "Dealer"
+      },
+      "service_agreement_status": {
+        "name": "Servicecontract",
+        "state": {
+          "active": "Actief",
+          "expired": "Verlopen",
+          "missing_data": "Gegevens ontbreken",
+          "none": "Geen"
+        }
+      },
+      "cellular_data_status": {
+        "name": "Mobiele data",
+        "state": {
+          "active": "Actief",
+          "near_data_limit": "Bijna aan datalimiet",
+          "reached_data_limit": "Datalimiet bereikt",
+          "unknown": "Onbekend"
+        }
+      },
+      "cellular_data_used": {
+        "name": "Verbruikte mobiele data"
+      },
+      "cellular_expiry": {
+        "name": "Mobiel abonnement verloopt"
+      },
+      "cellular_installed": {
+        "name": "Kit voor mobiel netwerk geïnstalleerd"
+      },
+      "cell_kit_payment_status": {
+        "name": "Betaling mobiel abonnement",
+        "state": {
+          "paid": "Betaald",
+          "in_progress": "In behandeling",
+          "renewal_failed": "Verlenging mislukt",
+          "unknown": "Onbekend"
+        }
+      },
+      "cell_data_remaining": {
+        "name": "Resterende mobiele data"
+      },
+      "scheduled_firmware_update": {
+        "name": "Geplande firmware-update"
+      },
+      "install_progress": {
+        "name": "Installatievoortgang"
+      },
+      "ats_power_source": {
+        "name": "Stand omschakelaar",
+        "state": {
+          "unknown": "Onbekend",
+          "utility": "Net",
+          "generator": "Generator"
+        }
+      },
+      "ats_connection_type": {
+        "name": "Verbinding omschakelaar",
+        "state": {
+          "hardwired": "Bekabeld",
+          "ism": "ISM-radio"
+        }
+      },
+      "ats_signal_strength": {
+        "name": "Signaal omschakelaar",
+        "state": {
+          "weak": "Zwak",
+          "moderate": "Matig",
+          "strong": "Sterk"
+        }
+      },
+      "load_module_parameter": {
+        "name": "Lastafschakelmodule {name}"
+      },
+      "pim_parameter": {
+        "name": "PIM {name}"
+      },
+      "extra_field": {
+        "name": "{field}"
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "Cloudverbinding"
+      },
+      "utility_power": {
+        "name": "Netstroom"
+      },
+      "on_generator_power": {
+        "name": "Op generatorstroom"
+      },
+      "running": {
+        "name": "Draait"
+      },
+      "exercising": {
+        "name": "Testrun actief"
+      },
+      "ready_to_run": {
+        "name": "Bedrijfsklaar"
+      },
+      "not_in_auto": {
+        "name": "Niet in Auto"
+      },
+      "oil_pressure_problem": {
+        "name": "Oliedruk"
+      },
+      "maintenance_due": {
+        "name": "Onderhoud nodig"
+      },
+      "active_alerts": {
+        "name": "Alarmen"
+      },
+      "critical_fault": {
+        "name": "Kritieke storing"
+      },
+      "e_stop": {
+        "name": "Noodstop"
+      },
+      "exercise_scheduled": {
+        "name": "Testrun gepland"
+      },
+      "service_agreement": {
+        "name": "Servicecontract"
+      },
+      "cellular_kit_online": {
+        "name": "Kit voor mobiel netwerk"
+      },
+      "wifi_connected": {
+        "name": "Wi-Fi"
+      },
+      "cellular_connected": {
+        "name": "Mobiel netwerk"
+      },
+      "load_module_connected": {
+        "name": "Lastafschakelmodule"
+      },
+      "pim_connected": {
+        "name": "PIM"
+      },
+      "firmware_update_available": {
+        "name": "Firmware-update beschikbaar"
+      },
+      "extra_flag": {
+        "name": "{field}"
+      }
+    },
+    "button": {
+      "start_exercise": {
+        "name": "Testrun starten"
+      },
+      "stop_exercise": {
+        "name": "Testrun stoppen"
+      },
+      "sync_controller_clock": {
+        "name": "Controllerklok synchroniseren"
+      },
+      "refresh": {
+        "name": "Vernieuwen"
+      }
+    },
+    "select": {
+      "exercise_mode": {
+        "name": "Testrunmodus",
+        "state": {
+          "unloaded": "Onbelast",
+          "unloaded_full_speed": "Onbelast, vol toerental",
+          "loaded_full_speed": "Belast, vol toerental",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "exercise_frequency": {
+        "name": "Testrunfrequentie",
+        "state": {
+          "weekly": "Wekelijks",
+          "every_other_week": "Om de week",
+          "monthly": "Maandelijks"
+        }
+      }
+    },
+    "number": {
+      "exercise_duration": {
+        "name": "Testrunduur"
+      },
+      "load_module_setting": {
+        "name": "Lastafschakelmodule {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "datetime": {
+      "next_exercise_start": {
+        "name": "Start volgende testrun"
+      }
+    },
+    "switch": {
+      "notify_shutdowns": {
+        "name": "Notificaties bij uitschakeling"
+      },
+      "notify_warnings": {
+        "name": "Notificaties bij waarschuwing"
+      },
+      "notify_running": {
+        "name": "Notificaties bij draaiende generator"
+      },
+      "notify_notices": {
+        "name": "Algemene meldingen"
+      },
+      "notify_connection": {
+        "name": "Verbindingsnotificaties"
+      },
+      "notify_maintenance": {
+        "name": "Onderhoudsherinneringen"
+      },
+      "notify_long_running": {
+        "name": "Notificaties bij langdurig draaien"
+      },
+      "notify_emails": {
+        "name": "E-mailnotificaties"
+      },
+      "notify_push": {
+        "name": "Pushnotificaties"
+      },
+      "notify_other": {
+        "name": "Notificaties: {name}"
+      },
+      "auto_firmware_update": {
+        "name": "Automatische firmware-updates"
+      },
+      "load_module_setting": {
+        "name": "Lastafschakelmodule {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "text": {
+      "generator_name": {
+        "name": "Generatornaam"
+      },
+      "load_module_setting": {
+        "name": "Lastafschakelmodule {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "Activiteit",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "none": "Geen",
+              "status": "Status",
+              "warning": "Waarschuwing",
+              "fault": "Storing",
+              "shutdown": "Uitschakeling",
+              "notice": "Melding",
+              "system_status_change": "Wijziging systeemstatus"
+            }
+          }
+        }
+      },
+      "alerts": {
+        "name": "Alarm",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "raised": "Opgetreden",
+              "cleared": "Opgeheven"
+            }
+          }
+        }
+      },
+      "notifications": {
+        "name": "Notificatie",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "shutdown": "Uitschakeling",
+              "warning": "Waarschuwing",
+              "maintenance_notice": "Onderhoudsmelding",
+              "long_running_notice": "Melding langdurig draaien",
+              "notice": "Melding",
+              "engine_started_notice": "Motor gestart",
+              "engine_stopped_notice": "Motor gestopt",
+              "exercise_started_notice": "Testrun gestart",
+              "exercise_ended_notice": "Testrun beëindigd",
+              "online_notice": "Weer online",
+              "offline_notice": "Offline gegaan"
+            }
+          }
+        }
+      },
+      "power": {
+        "name": "Stroomgebeurtenis",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "utility_lost": "Netstroom uitgevallen",
+              "utility_restored": "Netstroom hersteld",
+              "generator_started": "Generator gestart",
+              "generator_stopped": "Generator gestopt",
+              "transferred_to_generator": "Belasting omgeschakeld naar generator",
+              "transferred_to_utility": "Belasting omgeschakeld naar net"
+            }
+          }
+        }
+      }
+    },
+    "calendar": {
+      "schedule": {
+        "name": "Testruns en onderhoud",
+        "state_attributes": {
+          "message": {
+            "state": {
+              "exercise": "Testrun",
+              "last_exercise": "Laatste testrun",
+              "maintenance_due": "Onderhoud nodig"
+            }
+          },
+          "description": {
+            "state": {
+              "last_exercise": "Meest recente testrun die de generator heeft gemeld.",
+              "scheduled": "Volgende geplande testrun.",
+              "projected": "Berekend op basis van het testrunschema.",
+              "maintenance_due": "Volgend gepland onderhoud van de generator."
+            }
+          }
+        }
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Controllerfirmware",
+        "state_attributes": {
+          "release_summary": {
+            "state": {
+              "released": "Uitgebracht op {date}.",
+              "scheduled": "Installatie gepland op {date}.",
+              "auto_update_off": "Automatische firmware-updates staan uit voor deze generator."
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_generator": {
+      "message": "Generator {device_id} hoort niet bij dit account."
+    },
+    "auth_failed": {
+      "message": "Rehlko heeft de opgeslagen inloggegevens geweigerd; er is om herauthenticatie gevraagd."
+    },
+    "api_error": {
+      "message": "De Rehlko-dienst heeft het verzoek geweigerd (HTTP {status}): {message}"
+    },
+    "unavailable": {
+      "message": "De Rehlko-dienst is niet beschikbaar: {message}"
+    },
+    "offline": {
+      "message": "{name} is offline; acties op afstand zijn niet beschikbaar totdat de verbinding is hersteld."
+    },
+    "e_stop": {
+      "message": "De noodstop van {name} is geactiveerd. Starten op afstand en testruns op afstand zijn niet beschikbaar totdat de noodstop bij de generator is gereset."
+    },
+    "not_ready": {
+      "message": "{name} is niet bedrijfsklaar (status: {status}); het starten van een testrun is uitgeschakeld."
+    },
+    "no_scheduling": {
+      "message": "Testruns op afstand plannen is niet beschikbaar voor de controller van {name}."
+    },
+    "empty_note": {
+      "message": "De onderhoudsnotitie is leeg."
+    },
+    "empty_name": {
+      "message": "De naam is leeg."
+    },
+    "read_only": {
+      "message": "{name} is alleen-lezen."
+    },
+    "device_not_found": {
+      "message": "Apparaat {device_id} is niet gevonden."
+    },
+    "not_a_generator": {
+      "message": "Apparaat {device_id} is geen Rehlko-generator."
+    },
+    "entry_not_loaded": {
+      "message": "Het account voor apparaat {device_id} is niet geladen."
+    },
+    "no_serial": {
+      "message": "De dienst heeft geen serienummer voor die controller doorgegeven."
+    }
+  },
+  "services": {
+    "start_exercise": {
+      "name": "Testrun starten",
+      "description": "Start nu een testrun (\"Start an exercise now\" in de app). De generator moet online zijn, in Auto staan en bedrijfsklaar zijn.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Hoe de testrun wordt uitgevoerd; standaard de modus van de geplande testrun."
+        }
+      }
+    },
+    "stop_exercise": {
+      "name": "Testrun stoppen",
+      "description": "Stopt de lopende testrun.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        }
+      }
+    },
+    "set_exercise_schedule": {
+      "name": "Testrunschema instellen",
+      "description": "Maakt of wijzigt de terugkerende testrun. Weggelaten velden behouden hun huidige waarde.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        },
+        "frequency": {
+          "name": "Frequentie",
+          "description": "Wekelijks, om de week of maandelijks."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Onbelast, onbelast op vol toerental, belast op vol toerental of EcoExercise."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Draaitijd in minuten."
+        },
+        "next_start": {
+          "name": "Volgende start",
+          "description": "Wanneer de volgende testrun start (alleen bij controllers waarbij je dit kunt kiezen)."
+        }
+      }
+    },
+    "delete_exercise_schedule": {
+      "name": "Testrunschema verwijderen",
+      "description": "Verwijdert de terugkerende testrun.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        }
+      }
+    },
+    "add_maintenance_note": {
+      "name": "Onderhoudsnotitie toevoegen",
+      "description": "Voegt een notitie toe aan de onderhoudsgeschiedenis van de generator.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        },
+        "note": {
+          "name": "Notitie",
+          "description": "Wat er is gedaan."
+        }
+      }
+    },
+    "sync_controller_clock": {
+      "name": "Controllerklok synchroniseren",
+      "description": "Stelt de klok van de controller in (op nu, tenzij een tijd is opgegeven).",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        },
+        "timestamp": {
+          "name": "Tijd",
+          "description": "De in te stellen tijd; standaard nu."
+        }
+      }
+    },
+    "set_peripheral_value": {
+      "name": "Waarde van lastafschakelmodule/PIM instellen",
+      "description": "Schrijft één parameter van de lastafschakelmodule of PIM.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        },
+        "definition_id": {
+          "name": "Definitie-ID",
+          "description": "De definitie-ID van de parameter (een entiteitsattribuut)."
+        },
+        "value": {
+          "name": "Waarde",
+          "description": "De te schrijven waarde."
+        }
+      }
+    },
+    "rename_peripheral": {
+      "name": "Item van lastafschakelmodule/PIM hernoemen",
+      "description": "Wijzigt de weergavenaam van een parameter van de lastafschakelmodule of PIM.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        },
+        "definition_id": {
+          "name": "Definitie-ID",
+          "description": "De definitie-ID van de parameter."
+        },
+        "name": {
+          "name": "Naam",
+          "description": "De nieuwe naam."
+        }
+      }
+    },
+    "refresh": {
+      "name": "Vernieuwen",
+      "description": "Haalt nu alles op, inclusief het activiteitenlogboek en de onderhoudsgeschiedenis.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Alleen het account van deze generator; alle accounts als dit wordt weggelaten."
+        }
+      }
+    },
+    "get_activity_log": {
+      "name": "Activiteitenlogboek ophalen",
+      "description": "Geeft het activiteitenlogboek (gebeurtenissenlogboek) van de generator terug.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        },
+        "limit": {
+          "name": "Limiet",
+          "description": "Het maximale aantal items dat wordt teruggegeven, nieuwste eerst."
+        }
+      }
+    },
+    "get_alerts": {
+      "name": "Actieve alarmen ophalen",
+      "description": "Geeft de actieve alarmen van de generator terug.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        }
+      }
+    },
+    "get_maintenance_history": {
+      "name": "Onderhoudsgeschiedenis ophalen",
+      "description": "Geeft de onderhoudsnotities en het onderhoudsschema terug.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        }
+      }
+    },
+    "get_notifications": {
+      "name": "Notificaties ophalen",
+      "description": "Geeft de app-notificaties voor de generator terug.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        },
+        "limit": {
+          "name": "Limiet",
+          "description": "Het maximale aantal notificaties dat wordt teruggegeven, nieuwste eerst."
+        }
+      }
+    },
+    "get_generator_data": {
+      "name": "Generatorgegevens ophalen",
+      "description": "Geeft de onbewerkte apparaat- en detailgegevens terug zoals de dienst ze heeft verstuurd.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        }
+      }
+    },
+    "get_parameter_definitions": {
+      "name": "Parameterdefinities ophalen",
+      "description": "Geeft de parametercatalogus van de controller terug (namen, typen, bereiken, eenheden).",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "De generator (of de bijbehorende omschakelaar) waarop de actie wordt uitgevoerd."
+        },
+        "kind": {
+          "name": "Controller",
+          "description": "De controller van de generator of die van de omschakelaar."
+        }
+      }
+    }
+  }
+}

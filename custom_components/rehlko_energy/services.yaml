@@ -1,0 +1,153 @@
+start_exercise:
+  fields:
+    device_id: &device
+      required: true
+      selector:
+        device:
+          integration: rehlko_energy
+    mode: &mode
+      required: false
+      selector:
+        select:
+          translation_key: exercise_mode
+          options:
+            - unloaded
+            - unloaded_full_speed
+            - loaded_full_speed
+            - eco_exercise
+
+stop_exercise:
+  fields:
+    device_id: *device
+
+set_exercise_schedule:
+  fields:
+    device_id: *device
+    frequency:
+      required: false
+      selector:
+        select:
+          translation_key: exercise_frequency
+          options:
+            - weekly
+            - every_other_week
+            - monthly
+    mode: *mode
+    duration:
+      required: false
+      example: 20
+      selector:
+        number:
+          min: 5
+          max: 60
+          step: 1
+          unit_of_measurement: min
+          mode: box
+    next_start:
+      required: false
+      selector:
+        datetime:
+
+delete_exercise_schedule:
+  fields:
+    device_id: *device
+
+add_maintenance_note:
+  fields:
+    device_id: *device
+    note:
+      required: true
+      example: "Changed oil and filter, replaced air filter."
+      selector:
+        text:
+          multiline: true
+
+sync_controller_clock:
+  fields:
+    device_id: *device
+    timestamp:
+      required: false
+      selector:
+        datetime:
+
+set_peripheral_value:
+  fields:
+    device_id: *device
+    definition_id:
+      required: true
+      selector:
+        text:
+    value:
+      required: true
+      selector:
+        object:
+
+rename_peripheral:
+  fields:
+    device_id: *device
+    definition_id:
+      required: true
+      selector:
+        text:
+    name:
+      required: true
+      example: "Air conditioner"
+      selector:
+        text:
+
+refresh:
+  fields:
+    device_id:
+      required: false
+      selector:
+        device:
+          integration: rehlko_energy
+
+get_activity_log:
+  fields:
+    device_id: *device
+    limit:
+      required: false
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 1000
+          mode: box
+
+get_alerts:
+  fields:
+    device_id: *device
+
+get_maintenance_history:
+  fields:
+    device_id: *device
+
+get_notifications:
+  fields:
+    device_id: *device
+    limit:
+      required: false
+      default: 50
+      selector:
+        number:
+          min: 1
+          max: 500
+          mode: box
+
+get_generator_data:
+  fields:
+    device_id: *device
+
+get_parameter_definitions:
+  fields:
+    device_id: *device
+    kind:
+      required: true
+      default: generator
+      selector:
+        select:
+          translation_key: controller_kind
+          options:
+            - generator
+            - ats

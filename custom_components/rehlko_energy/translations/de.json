@@ -1,0 +1,1003 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Bei Rehlko Energy Management anmelden",
+        "description": "Verwende die E-Mail-Adresse und das Passwort, die du in der App Energy Mgmt. (früher KOHLER Energy Management) nutzt. Die App-Zugangsdaten unten weisen die App gegenüber dem Anmeldedienst von Rehlko aus; wo du sie findest, steht in der Dokumentation der Integration.",
+        "data": {
+          "username": "E-Mail",
+          "password": "Passwort"
+        },
+        "data_description": {
+          "username": "Die E-Mail-Adresse deines Kontos bei Rehlko / Kohler Energy Management.",
+          "password": "Wird in Home Assistant gespeichert, damit sich die Integration erneut anmelden kann, wenn ihre Sitzung abläuft."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "App-Zugangsdaten",
+            "description": "Die OAuth-Client-ID, das Client-Geheimnis und der API-Schlüssel aus der Konfiguration der App Energy Mgmt.",
+            "data": {
+              "client_id": "OAuth-Client-ID",
+              "client_secret": "OAuth-Client-Geheimnis",
+              "api_key": "API-Schlüssel"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID in der Konfigurationsdatei der App.",
+              "client_secret": "CLIENT_SECRET in der Konfigurationsdatei der App.",
+              "api_key": "API_KEY in der Konfigurationsdatei der App."
+            }
+          }
+        }
+      },
+      "reauth_confirm": {
+        "title": "Erneut anmelden",
+        "description": "Rehlko verlangt erneut das Passwort für {username}.",
+        "data": {
+          "password": "Passwort"
+        },
+        "data_description": {
+          "password": "Wird in Home Assistant gespeichert, damit sich die Integration erneut anmelden kann, wenn ihre Sitzung abläuft."
+        }
+      },
+      "reconfigure": {
+        "title": "Zugangsdaten aktualisieren",
+        "description": "Aktualisiere das Passwort oder die App-Zugangsdaten für {username} (zum Beispiel, nachdem ein App-Update sie geändert hat).",
+        "data": {
+          "password": "Passwort"
+        },
+        "data_description": {
+          "password": "Wird in Home Assistant gespeichert, damit sich die Integration erneut anmelden kann, wenn ihre Sitzung abläuft."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "App-Zugangsdaten",
+            "description": "Die OAuth-Client-ID, das Client-Geheimnis und der API-Schlüssel aus der Konfiguration der App Energy Mgmt.",
+            "data": {
+              "client_id": "OAuth-Client-ID",
+              "client_secret": "OAuth-Client-Geheimnis",
+              "api_key": "API-Schlüssel"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID in der Konfigurationsdatei der App.",
+              "client_secret": "Leer lassen, um den gespeicherten Wert beizubehalten.",
+              "api_key": "Leer lassen, um den gespeicherten Wert beizubehalten."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Die E-Mail-Adresse oder das Passwort wurde nicht akzeptiert.",
+      "sign_in_denied": "Der Anmeldedienst von Rehlko hat die Anmeldung mit Passwort für dieses Konto abgelehnt. Das passiert, wenn das Konto eine Multi-Faktor-Authentifizierung verlangt, die diese Integration nicht durchführen kann.",
+      "invalid_app_credentials": "Der Anmeldedienst hat die Client-ID oder das Client-Geheimnis der App abgelehnt.",
+      "invalid_api_key": "Anmeldung erfolgreich, aber die API hat die Anfrage abgelehnt; prüfe den API-Schlüssel.",
+      "cannot_connect": "Der Rehlko-Dienst konnte nicht erreicht werden.",
+      "no_generators": "Anmeldung erfolgreich, aber dieses Konto enthält keine Generatoren.",
+      "unknown": "Unerwarteter Fehler; siehe Protokolle."
+    },
+    "abort": {
+      "already_configured": "Dieses Konto ist bereits konfiguriert.",
+      "reauth_successful": "Erneut angemeldet.",
+      "reconfigure_successful": "Zugangsdaten aktualisiert.",
+      "wrong_account": "Diese Zugangsdaten gehören zu einem anderen Konto."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optionen für Rehlko Energy Management",
+        "data": {
+          "scan_interval": "Abfrageintervall in Bereitschaft",
+          "active_scan_interval": "Abfrageintervall bei Betrieb oder Netzausfall",
+          "feed_interval": "Intervall für Aktivitätsprotokoll, Alarme und Benachrichtigungen",
+          "notification_limit": "Anzahl abzurufender Benachrichtigungen pro Generator",
+          "sidebar_panel": "Generator-Panel in der Seitenleiste anzeigen",
+          "extra_diagnostic_entities": "Diagnose-Entitäten für alle übrigen API-Felder erstellen"
+        },
+        "data_description": {
+          "scan_interval": "Wie oft der Generator abgefragt wird, solange er in Bereitschaft ist.",
+          "active_scan_interval": "Gilt, solange der Motor läuft, während eines Probelaufs oder wenn das Haus über den Generator versorgt wird.",
+          "feed_interval": "Diese Listen ändern sich selten; ein längeres Intervall bedeutet weniger Anfragen.",
+          "notification_limit": "Die neuesten Benachrichtigungen werden zuerst abgerufen.",
+          "sidebar_panel": "Das Panel ist nur für Administratoren sichtbar.",
+          "extra_diagnostic_entities": "Sie werden deaktiviert angelegt: Nichts, was der Dienst meldet, bleibt verborgen, und nichts wird aufgezeichnet, bis du es auf der Geräteseite aktivierst."
+        }
+      }
+    }
+  },
+  "selector": {
+    "exercise_mode": {
+      "options": {
+        "unloaded": "Ohne Last",
+        "unloaded_full_speed": "Ohne Last, volle Drehzahl",
+        "loaded_full_speed": "Mit Last, volle Drehzahl",
+        "eco_exercise": "EcoExercise"
+      }
+    },
+    "exercise_frequency": {
+      "options": {
+        "weekly": "Wöchentlich",
+        "every_other_week": "Alle zwei Wochen",
+        "monthly": "Monatlich"
+      }
+    },
+    "controller_kind": {
+      "options": {
+        "generator": "Generator",
+        "ats": "Netzumschalter"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "utility_voltage": {
+        "name": "Netzspannung"
+      },
+      "generator_voltage": {
+        "name": "Generatorspannung"
+      },
+      "generator_load": {
+        "name": "Generatorlast"
+      },
+      "generator_load_percent": {
+        "name": "Generatorauslastung"
+      },
+      "energy_produced": {
+        "name": "Erzeugte Energie"
+      },
+      "set_output_voltage": {
+        "name": "Nennausgangsspannung"
+      },
+      "power_source": {
+        "name": "Stromquelle",
+        "state": {
+          "unknown": "Unbekannt",
+          "utility": "Netz",
+          "generator": "Generator"
+        }
+      },
+      "engine_speed": {
+        "name": "Motordrehzahl"
+      },
+      "engine_frequency": {
+        "name": "Generatorfrequenz"
+      },
+      "engine_oil_pressure": {
+        "name": "Öldruck"
+      },
+      "engine_coolant_temperature": {
+        "name": "Kühlmitteltemperatur"
+      },
+      "lube_oil_temperature": {
+        "name": "Schmieröltemperatur"
+      },
+      "engine_compartment_temperature": {
+        "name": "Motorraumtemperatur"
+      },
+      "engine_state": {
+        "name": "Motorzustand",
+        "state": {
+          "off": "Aus",
+          "crank_on": "Anlassen",
+          "crank_pause": "Anlasspause",
+          "idle": "Leerlauf",
+          "running": "Läuft",
+          "cool_down": "Nachlauf",
+          "stopping": "Stoppt",
+          "shutdown": "Abschaltung",
+          "performing_loaded_test": "Test mit Last",
+          "performing_unloaded_test": "Test ohne Last",
+          "performing_variable_speed_exercise": "Probelauf mit variabler Drehzahl",
+          "performing_loaded_exercise": "Probelauf mit Last",
+          "fuel_priming": "Kraftstoffvorförderung",
+          "ecm_powered": "ECM eingeschaltet",
+          "fault_cool_down": "Nachlauf nach Störung",
+          "standby": "Bereitschaft",
+          "preheat": "Vorglühen",
+          "performing_unloaded_full_speed_exercise": "Probelauf ohne Last, volle Drehzahl",
+          "performing_full_speed_diagnostics": "Diagnose bei voller Drehzahl",
+          "unloading": "Entlastung",
+          "stopped_by_generator_management": "Durch Generatormanagement gestoppt",
+          "synchronizing": "Synchronisierung",
+          "protective_relay_tripped_contactor": "Schutzrelais ausgelöst",
+          "start_delay": "Startverzögerung",
+          "stationary_regen": "Standregeneration",
+          "choke": "Choke",
+          "performing_eco_cycle": "EcoExercise läuft"
+        }
+      },
+      "fuel_level": {
+        "name": "Kraftstoffstand"
+      },
+      "battery_voltage": {
+        "name": "Batteriespannung"
+      },
+      "controller_temperature": {
+        "name": "Steuerungstemperatur"
+      },
+      "controller_clock": {
+        "name": "Steuerungsuhr"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "ready_to_run": "Betriebsbereit",
+          "shutdown": "Abschaltung",
+          "switch_state_off": "Ausgeschaltet",
+          "running": "Läuft",
+          "running_exercise": "Probelauf",
+          "offline": "Offline"
+        }
+      },
+      "switch_state": {
+        "name": "Betriebsartschalter",
+        "state": {
+          "off": "Aus",
+          "auto": "Auto",
+          "manual": "Manuell"
+        }
+      },
+      "shutdown_reason": {
+        "name": "Abschaltgrund"
+      },
+      "alert_count": {
+        "name": "Aktive Alarme"
+      },
+      "total_runtime": {
+        "name": "Gesamtlaufzeit"
+      },
+      "total_operation": {
+        "name": "Gesamtbetriebszeit"
+      },
+      "runtime_since_maintenance": {
+        "name": "Laufzeit seit Wartung"
+      },
+      "last_run": {
+        "name": "Letzter Lauf"
+      },
+      "last_maintenance": {
+        "name": "Letzte Wartung"
+      },
+      "next_maintenance": {
+        "name": "Nächste Wartung"
+      },
+      "maintenance_period": {
+        "name": "Wartungsintervall"
+      },
+      "last_maintenance_note": {
+        "name": "Letzte Wartungsnotiz"
+      },
+      "next_exercise": {
+        "name": "Nächster Probelauf"
+      },
+      "last_exercise_start": {
+        "name": "Letzter Probelauf gestartet"
+      },
+      "last_exercise_end": {
+        "name": "Letzter Probelauf beendet"
+      },
+      "exercise_running_mode": {
+        "name": "Laufender Probelauf",
+        "state": {
+          "none": "Keiner",
+          "unloaded": "Ohne Last",
+          "unloaded_full_speed": "Ohne Last, volle Drehzahl",
+          "loaded_full_speed": "Mit Last, volle Drehzahl",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "last_event": {
+        "name": "Letzte Aktivität"
+      },
+      "last_notification": {
+        "name": "Letzte Benachrichtigung"
+      },
+      "weather_temperature": {
+        "name": "Außentemperatur"
+      },
+      "weather_condition": {
+        "name": "Wetter",
+        "state": {
+          "clear_sky": "Klarer Himmel",
+          "few_clouds": "Leicht bewölkt",
+          "scattered_clouds": "Aufgelockert bewölkt",
+          "broken_clouds": "Überwiegend bewölkt",
+          "shower_rain": "Regenschauer",
+          "rain": "Regen",
+          "thunderstorm": "Gewitter",
+          "snow": "Schnee",
+          "mist": "Dunst",
+          "unknown": "Unbekannt"
+        }
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "product": {
+        "name": "Steuerungsprodukt"
+      },
+      "controller_type": {
+        "name": "Steuerungstyp"
+      },
+      "firmware_version": {
+        "name": "Firmware-Version"
+      },
+      "current_firmware": {
+        "name": "Firmware-Build"
+      },
+      "fuel_type": {
+        "name": "Kraftstoffart",
+        "state": {
+          "natural_gas": "Erdgas",
+          "liquid_propane": "Flüssiggas (LP)",
+          "gasoline": "Benzin",
+          "diesel": "Diesel",
+          "unknown_undefined": "Unbekannt"
+        }
+      },
+      "cooling_type": {
+        "name": "Kühlung",
+        "state": {
+          "unknown": "Unbekannt",
+          "air": "Luft",
+          "liquid": "Flüssigkeit"
+        }
+      },
+      "connection_type": {
+        "name": "Verbindung",
+        "state": {
+          "unknown": "Unbekannt",
+          "ethernet": "Ethernet",
+          "kohler_wifi": "Kohler Wi-Fi",
+          "other_wifi": "Anderes WLAN",
+          "cellular": "Mobilfunk",
+          "kohler_cell_kit": "Kohler-Mobilfunk-Kit"
+        }
+      },
+      "device_ip_address": {
+        "name": "IP-Adresse"
+      },
+      "server_ip_address": {
+        "name": "Server-IP-Adresse"
+      },
+      "mac_address": {
+        "name": "MAC-Adresse"
+      },
+      "last_connected": {
+        "name": "Zuletzt verbunden"
+      },
+      "status_updated": {
+        "name": "Status aktualisiert"
+      },
+      "parameters_updated": {
+        "name": "Parameter aktualisiert"
+      },
+      "uptime_percent": {
+        "name": "Verbindungsverfügbarkeit"
+      },
+      "remote_reset_counter": {
+        "name": "Countdown Fernrücksetzung"
+      },
+      "wifi_strength": {
+        "name": "WLAN-Signal",
+        "state": {
+          "weak": "Schwach",
+          "moderate": "Mittel",
+          "strong": "Stark"
+        }
+      },
+      "cellular_strength": {
+        "name": "Mobilfunksignal",
+        "state": {
+          "weak": "Schwach",
+          "moderate": "Mittel",
+          "strong": "Stark"
+        }
+      },
+      "site_address": {
+        "name": "Standortadresse"
+      },
+      "dealer": {
+        "name": "Händler"
+      },
+      "service_agreement_status": {
+        "name": "Servicevertrag",
+        "state": {
+          "active": "Aktiv",
+          "expired": "Abgelaufen",
+          "missing_data": "Daten fehlen",
+          "none": "Keiner"
+        }
+      },
+      "cellular_data_status": {
+        "name": "Mobilfunkdaten",
+        "state": {
+          "active": "Aktiv",
+          "near_data_limit": "Datenlimit fast erreicht",
+          "reached_data_limit": "Datenlimit erreicht",
+          "unknown": "Unbekannt"
+        }
+      },
+      "cellular_data_used": {
+        "name": "Verbrauchte Mobilfunkdaten"
+      },
+      "cellular_expiry": {
+        "name": "Mobilfunktarif läuft ab"
+      },
+      "cellular_installed": {
+        "name": "Mobilfunk-Kit installiert"
+      },
+      "cell_kit_payment_status": {
+        "name": "Mobilfunktarif-Zahlung",
+        "state": {
+          "paid": "Bezahlt",
+          "in_progress": "In Bearbeitung",
+          "renewal_failed": "Verlängerung fehlgeschlagen",
+          "unknown": "Unbekannt"
+        }
+      },
+      "cell_data_remaining": {
+        "name": "Verbleibende Mobilfunkdaten"
+      },
+      "scheduled_firmware_update": {
+        "name": "Geplantes Firmware-Update"
+      },
+      "install_progress": {
+        "name": "Installationsfortschritt"
+      },
+      "ats_power_source": {
+        "name": "Netzumschalter-Stellung",
+        "state": {
+          "unknown": "Unbekannt",
+          "utility": "Netz",
+          "generator": "Generator"
+        }
+      },
+      "ats_connection_type": {
+        "name": "Netzumschalter-Verbindung",
+        "state": {
+          "hardwired": "Fest verdrahtet",
+          "ism": "ISM-Funk"
+        }
+      },
+      "ats_signal_strength": {
+        "name": "Netzumschalter-Signal",
+        "state": {
+          "weak": "Schwach",
+          "moderate": "Mittel",
+          "strong": "Stark"
+        }
+      },
+      "load_module_parameter": {
+        "name": "Lastabwurfmodul {name}"
+      },
+      "pim_parameter": {
+        "name": "PIM {name}"
+      },
+      "extra_field": {
+        "name": "{field}"
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "Cloud-Verbindung"
+      },
+      "utility_power": {
+        "name": "Netzstrom"
+      },
+      "on_generator_power": {
+        "name": "Versorgung über Generator"
+      },
+      "running": {
+        "name": "Läuft"
+      },
+      "exercising": {
+        "name": "Probelauf"
+      },
+      "ready_to_run": {
+        "name": "Betriebsbereit"
+      },
+      "not_in_auto": {
+        "name": "Nicht auf Auto"
+      },
+      "oil_pressure_problem": {
+        "name": "Öldruck"
+      },
+      "maintenance_due": {
+        "name": "Wartung fällig"
+      },
+      "active_alerts": {
+        "name": "Alarme"
+      },
+      "critical_fault": {
+        "name": "Kritische Störung"
+      },
+      "e_stop": {
+        "name": "Not-Aus"
+      },
+      "exercise_scheduled": {
+        "name": "Probelauf geplant"
+      },
+      "service_agreement": {
+        "name": "Servicevertrag"
+      },
+      "cellular_kit_online": {
+        "name": "Mobilfunk-Kit"
+      },
+      "wifi_connected": {
+        "name": "WLAN"
+      },
+      "cellular_connected": {
+        "name": "Mobilfunk"
+      },
+      "load_module_connected": {
+        "name": "Lastabwurfmodul"
+      },
+      "pim_connected": {
+        "name": "PIM"
+      },
+      "firmware_update_available": {
+        "name": "Firmware-Update verfügbar"
+      },
+      "extra_flag": {
+        "name": "{field}"
+      }
+    },
+    "button": {
+      "start_exercise": {
+        "name": "Probelauf starten"
+      },
+      "stop_exercise": {
+        "name": "Probelauf stoppen"
+      },
+      "sync_controller_clock": {
+        "name": "Steuerungsuhr synchronisieren"
+      },
+      "refresh": {
+        "name": "Aktualisieren"
+      }
+    },
+    "select": {
+      "exercise_mode": {
+        "name": "Probelaufmodus",
+        "state": {
+          "unloaded": "Ohne Last",
+          "unloaded_full_speed": "Ohne Last, volle Drehzahl",
+          "loaded_full_speed": "Mit Last, volle Drehzahl",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "exercise_frequency": {
+        "name": "Probelaufhäufigkeit",
+        "state": {
+          "weekly": "Wöchentlich",
+          "every_other_week": "Alle zwei Wochen",
+          "monthly": "Monatlich"
+        }
+      }
+    },
+    "number": {
+      "exercise_duration": {
+        "name": "Probelaufdauer"
+      },
+      "load_module_setting": {
+        "name": "Lastabwurfmodul {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "datetime": {
+      "next_exercise_start": {
+        "name": "Nächster Probelaufstart"
+      }
+    },
+    "switch": {
+      "notify_shutdowns": {
+        "name": "Benachrichtigungen bei Abschaltung"
+      },
+      "notify_warnings": {
+        "name": "Benachrichtigungen bei Warnung"
+      },
+      "notify_running": {
+        "name": "Benachrichtigungen bei Generatorbetrieb"
+      },
+      "notify_notices": {
+        "name": "Allgemeine Hinweise"
+      },
+      "notify_connection": {
+        "name": "Verbindungsbenachrichtigungen"
+      },
+      "notify_maintenance": {
+        "name": "Wartungserinnerungen"
+      },
+      "notify_long_running": {
+        "name": "Benachrichtigungen bei Langzeitbetrieb"
+      },
+      "notify_emails": {
+        "name": "E-Mail-Benachrichtigungen"
+      },
+      "notify_push": {
+        "name": "Push-Benachrichtigungen"
+      },
+      "notify_other": {
+        "name": "Benachrichtigungen: {name}"
+      },
+      "auto_firmware_update": {
+        "name": "Automatische Firmware-Updates"
+      },
+      "load_module_setting": {
+        "name": "Lastabwurfmodul {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "text": {
+      "generator_name": {
+        "name": "Generatorname"
+      },
+      "load_module_setting": {
+        "name": "Lastabwurfmodul {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "Aktivität",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "none": "Keine Einstufung",
+              "status": "Status",
+              "warning": "Warnung",
+              "fault": "Störung",
+              "shutdown": "Abschaltung",
+              "notice": "Hinweis",
+              "system_status_change": "Systemstatusänderung"
+            }
+          }
+        }
+      },
+      "alerts": {
+        "name": "Alarm",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "raised": "Ausgelöst",
+              "cleared": "Aufgehoben"
+            }
+          }
+        }
+      },
+      "notifications": {
+        "name": "Benachrichtigung",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "shutdown": "Abschaltung",
+              "warning": "Warnung",
+              "maintenance_notice": "Wartungshinweis",
+              "long_running_notice": "Hinweis auf Langzeitbetrieb",
+              "notice": "Hinweis",
+              "engine_started_notice": "Motor gestartet",
+              "engine_stopped_notice": "Motor gestoppt",
+              "exercise_started_notice": "Probelauf gestartet",
+              "exercise_ended_notice": "Probelauf beendet",
+              "online_notice": "Wieder online",
+              "offline_notice": "Offline gegangen"
+            }
+          }
+        }
+      },
+      "power": {
+        "name": "Stromereignis",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "utility_lost": "Netzausfall",
+              "utility_restored": "Netzstrom wiederhergestellt",
+              "generator_started": "Generator gestartet",
+              "generator_stopped": "Generator gestoppt",
+              "transferred_to_generator": "Last auf Generator umgeschaltet",
+              "transferred_to_utility": "Last auf Netz umgeschaltet"
+            }
+          }
+        }
+      }
+    },
+    "calendar": {
+      "schedule": {
+        "name": "Probelauf und Wartung",
+        "state_attributes": {
+          "message": {
+            "state": {
+              "exercise": "Probelauf",
+              "last_exercise": "Letzter Probelauf",
+              "maintenance_due": "Wartung fällig"
+            }
+          },
+          "description": {
+            "state": {
+              "last_exercise": "Der letzte vom Generator gemeldete Probelauf.",
+              "scheduled": "Nächster geplanter Probelauf.",
+              "projected": "Aus dem Probelauf-Zeitplan berechnet.",
+              "maintenance_due": "Nächste geplante Wartung des Generators."
+            }
+          }
+        }
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Steuerungs-Firmware",
+        "state_attributes": {
+          "release_summary": {
+            "state": {
+              "released": "Veröffentlicht am {date}.",
+              "scheduled": "Installation geplant für {date}.",
+              "auto_update_off": "Automatische Firmware-Updates sind für diesen Generator deaktiviert."
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_generator": {
+      "message": "Der Generator {device_id} gehört nicht zu diesem Konto."
+    },
+    "auth_failed": {
+      "message": "Rehlko hat die gespeicherten Zugangsdaten abgelehnt; eine erneute Authentifizierung wurde angefordert."
+    },
+    "api_error": {
+      "message": "Der Rehlko-Dienst hat die Anfrage abgelehnt (HTTP {status}): {message}"
+    },
+    "unavailable": {
+      "message": "Der Rehlko-Dienst ist nicht verfügbar: {message}"
+    },
+    "offline": {
+      "message": "{name} ist offline; Fernaktionen sind nicht verfügbar, bis die Verbindung wieder besteht."
+    },
+    "e_stop": {
+      "message": "An {name} ist der Not-Aus betätigt. Fernstart und Fern-Probelauf sind nicht verfügbar, bis er am Generator zurückgesetzt wird."
+    },
+    "not_ready": {
+      "message": "{name} ist nicht betriebsbereit (Status: {status}); das Starten eines Probelaufs ist deaktiviert."
+    },
+    "no_scheduling": {
+      "message": "Die Fernplanung von Probeläufen ist für die Steuerung von {name} nicht verfügbar."
+    },
+    "empty_note": {
+      "message": "Die Wartungsnotiz ist leer."
+    },
+    "empty_name": {
+      "message": "Der Name ist leer."
+    },
+    "read_only": {
+      "message": "{name} ist schreibgeschützt."
+    },
+    "device_not_found": {
+      "message": "Das Gerät {device_id} wurde nicht gefunden."
+    },
+    "not_a_generator": {
+      "message": "Das Gerät {device_id} ist kein Rehlko-Generator."
+    },
+    "entry_not_loaded": {
+      "message": "Das Konto für das Gerät {device_id} ist nicht geladen."
+    },
+    "no_serial": {
+      "message": "Der Dienst hat für diese Steuerung keine Seriennummer gemeldet."
+    }
+  },
+  "services": {
+    "start_exercise": {
+      "name": "Probelauf starten",
+      "description": "Startet sofort einen Probelauf (in der App: „Start an exercise now“). Der Generator muss online sein, auf Auto stehen und betriebsbereit sein.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Wie der Probelauf ausgeführt wird; standardmäßig im Modus des geplanten Probelaufs."
+        }
+      }
+    },
+    "stop_exercise": {
+      "name": "Probelauf stoppen",
+      "description": "Stoppt den laufenden Probelauf.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        }
+      }
+    },
+    "set_exercise_schedule": {
+      "name": "Probelauf-Zeitplan festlegen",
+      "description": "Erstellt oder ändert den wiederkehrenden Probelauf. Nicht angegebene Felder behalten ihren aktuellen Wert.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        },
+        "frequency": {
+          "name": "Häufigkeit",
+          "description": "Wöchentlich, alle zwei Wochen oder monatlich."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Ohne Last, ohne Last bei voller Drehzahl, mit Last bei voller Drehzahl oder EcoExercise."
+        },
+        "duration": {
+          "name": "Dauer",
+          "description": "Laufzeit in Minuten."
+        },
+        "next_start": {
+          "name": "Nächster Start",
+          "description": "Wann der nächste Probelauf beginnt (nur bei Steuerungen, die diese Auswahl erlauben)."
+        }
+      }
+    },
+    "delete_exercise_schedule": {
+      "name": "Probelauf-Zeitplan löschen",
+      "description": "Entfernt den wiederkehrenden Probelauf.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        }
+      }
+    },
+    "add_maintenance_note": {
+      "name": "Wartungsnotiz hinzufügen",
+      "description": "Fügt dem Wartungsverlauf des Generators einen Eintrag hinzu.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Was gemacht wurde."
+        }
+      }
+    },
+    "sync_controller_clock": {
+      "name": "Steuerungsuhr synchronisieren",
+      "description": "Stellt die Uhr der Steuerung (auf die aktuelle Zeit, sofern keine andere angegeben ist).",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        },
+        "timestamp": {
+          "name": "Zeit",
+          "description": "Die einzustellende Zeit; standardmäßig die aktuelle Zeit."
+        }
+      }
+    },
+    "set_peripheral_value": {
+      "name": "Wert für Lastabwurfmodul/PIM festlegen",
+      "description": "Schreibt einen Parameter des Lastabwurfmoduls oder des PIM.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        },
+        "definition_id": {
+          "name": "Definitions-ID",
+          "description": "Die Definitions-ID des Parameters (ein Attribut der Entität)."
+        },
+        "value": {
+          "name": "Wert",
+          "description": "Der zu schreibende Wert."
+        }
+      }
+    },
+    "rename_peripheral": {
+      "name": "Last-/PIM-Element umbenennen",
+      "description": "Ändert den Anzeigenamen eines Parameters des Lastabwurfmoduls oder des PIM.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        },
+        "definition_id": {
+          "name": "Definitions-ID",
+          "description": "Die Definitions-ID des Parameters."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Der neue Name."
+        }
+      }
+    },
+    "refresh": {
+      "name": "Aktualisieren",
+      "description": "Fragt jetzt alles ab, einschließlich Aktivitätsprotokoll und Wartungsverlauf.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Nur das Konto dieses Generators; ohne Angabe alle Konten."
+        }
+      }
+    },
+    "get_activity_log": {
+      "name": "Aktivitätsprotokoll abrufen",
+      "description": "Gibt das Aktivitätsprotokoll (Ereignisprotokoll) des Generators zurück.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "Maximale Anzahl zurückgegebener Einträge, neueste zuerst."
+        }
+      }
+    },
+    "get_alerts": {
+      "name": "Aktive Alarme abrufen",
+      "description": "Gibt die aktiven Alarme des Generators zurück.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        }
+      }
+    },
+    "get_maintenance_history": {
+      "name": "Wartungsverlauf abrufen",
+      "description": "Gibt die Wartungsnotizen und den Wartungsplan zurück.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        }
+      }
+    },
+    "get_notifications": {
+      "name": "Benachrichtigungen abrufen",
+      "description": "Gibt die App-Benachrichtigungen für den Generator zurück.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "Maximale Anzahl zurückgegebener Benachrichtigungen, neueste zuerst."
+        }
+      }
+    },
+    "get_generator_data": {
+      "name": "Generatordaten abrufen",
+      "description": "Gibt die rohen Geräte- und Detaildaten so zurück, wie der Dienst sie gesendet hat.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        }
+      }
+    },
+    "get_parameter_definitions": {
+      "name": "Parameterdefinitionen abrufen",
+      "description": "Gibt den Parameterkatalog der Steuerung zurück (Namen, Typen, Wertebereiche, Einheiten).",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Der Generator (oder sein Netzumschalter), auf den die Aktion angewendet wird."
+        },
+        "kind": {
+          "name": "Steuerung",
+          "description": "Die Steuerung des Generators oder die des Netzumschalters."
+        }
+      }
+    }
+  }
+}

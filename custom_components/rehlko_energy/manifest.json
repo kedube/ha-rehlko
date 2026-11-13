@@ -1,0 +1,14 @@
+{
+  "domain": "rehlko_energy",
+  "name": "Rehlko Energy Management",
+  "codeowners": ["@kedube"],
+  "config_flow": true,
+  "dependencies": ["http", "panel_custom"],
+  "documentation": "https://github.com/kedube/ha-rehlko",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/kedube/ha-rehlko/issues",
+  "loggers": ["custom_components.rehlko_energy"],
+  "requirements": [],
+  "version": "1.00"
+}

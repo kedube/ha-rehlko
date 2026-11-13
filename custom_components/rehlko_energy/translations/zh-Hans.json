@@ -1,0 +1,1003 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "登录 Rehlko Energy Management",
+        "description": "请使用您在 Energy Mgmt.（原 KOHLER Energy Management）应用中使用的电子邮箱和密码。下方的应用凭据用于向 Rehlko 的登录服务标识该应用；获取方法请参阅本集成的文档。",
+        "data": {
+          "username": "电子邮箱",
+          "password": "密码"
+        },
+        "data_description": {
+          "username": "您的 Rehlko / Kohler Energy Management 账户的电子邮箱地址。",
+          "password": "保存在 Home Assistant 中，以便集成在会话过期后重新登录。"
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "应用凭据",
+            "description": "来自 Energy Mgmt. 应用配置的 OAuth 客户端 ID、客户端密钥和 API 密钥。",
+            "data": {
+              "client_id": "OAuth 客户端 ID",
+              "client_secret": "OAuth 客户端密钥",
+              "api_key": "API 密钥"
+            },
+            "data_description": {
+              "client_id": "应用配置文件中的 CLIENT_ID。",
+              "client_secret": "应用配置文件中的 CLIENT_SECRET。",
+              "api_key": "应用配置文件中的 API_KEY。"
+            }
+          }
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新登录",
+        "description": "Rehlko 要求再次输入 {username} 的密码。",
+        "data": {
+          "password": "密码"
+        },
+        "data_description": {
+          "password": "保存在 Home Assistant 中，以便集成在会话过期后重新登录。"
+        }
+      },
+      "reconfigure": {
+        "title": "更新凭据",
+        "description": "更新 {username} 的密码或应用凭据（例如应用更新导致凭据变化之后）。",
+        "data": {
+          "password": "密码"
+        },
+        "data_description": {
+          "password": "保存在 Home Assistant 中，以便集成在会话过期后重新登录。"
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "应用凭据",
+            "description": "来自 Energy Mgmt. 应用配置的 OAuth 客户端 ID、客户端密钥和 API 密钥。",
+            "data": {
+              "client_id": "OAuth 客户端 ID",
+              "client_secret": "OAuth 客户端密钥",
+              "api_key": "API 密钥"
+            },
+            "data_description": {
+              "client_id": "应用配置文件中的 CLIENT_ID。",
+              "client_secret": "留空则保留已保存的值。",
+              "api_key": "留空则保留已保存的值。"
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "电子邮箱或密码不正确。",
+      "sign_in_denied": "Rehlko 的登录服务拒绝了此账户的密码登录。当账户要求多重身份验证时会出现这种情况，而本集成无法完成该验证。",
+      "invalid_app_credentials": "登录服务拒绝了应用的客户端 ID 或客户端密钥。",
+      "invalid_api_key": "已登录，但 API 拒绝了请求；请检查 API 密钥。",
+      "cannot_connect": "无法连接到 Rehlko 服务。",
+      "no_generators": "已登录，但此账户下没有发电机。",
+      "unknown": "意外错误；请查看日志。"
+    },
+    "abort": {
+      "already_configured": "此账户已配置。",
+      "reauth_successful": "已重新登录。",
+      "reconfigure_successful": "凭据已更新。",
+      "wrong_account": "这些凭据属于另一个账户。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Rehlko Energy Management 选项",
+        "data": {
+          "scan_interval": "待机时的轮询间隔",
+          "active_scan_interval": "运行或停电期间的轮询间隔",
+          "feed_interval": "活动日志、警报和通知的更新间隔",
+          "notification_limit": "每台发电机获取的通知数量",
+          "sidebar_panel": "在侧边栏中显示“发电机”面板",
+          "extra_diagnostic_entities": "为其余所有 API 字段创建诊断实体"
+        },
+        "data_description": {
+          "scan_interval": "发电机空闲时读取其数据的频率。",
+          "active_scan_interval": "在发动机运行、试机期间或住宅由发电机供电时使用。",
+          "feed_interval": "这些列表很少变化；间隔越长，请求越少。",
+          "notification_limit": "优先获取最新的通知。",
+          "sidebar_panel": "该面板仅对管理员可见。",
+          "extra_diagnostic_entities": "这些实体创建时处于禁用状态：服务报告的内容不会被隐藏，在您于设备页面启用之前也不会被记录。"
+        }
+      }
+    }
+  },
+  "selector": {
+    "exercise_mode": {
+      "options": {
+        "unloaded": "空载",
+        "unloaded_full_speed": "空载全速",
+        "loaded_full_speed": "带载全速",
+        "eco_exercise": "EcoExercise"
+      }
+    },
+    "exercise_frequency": {
+      "options": {
+        "weekly": "每周",
+        "every_other_week": "每两周",
+        "monthly": "每月"
+      }
+    },
+    "controller_kind": {
+      "options": {
+        "generator": "发电机",
+        "ats": "转换开关"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "utility_voltage": {
+        "name": "市电电压"
+      },
+      "generator_voltage": {
+        "name": "发电机电压"
+      },
+      "generator_load": {
+        "name": "发电机负载"
+      },
+      "generator_load_percent": {
+        "name": "发电机负载率"
+      },
+      "energy_produced": {
+        "name": "发电量"
+      },
+      "set_output_voltage": {
+        "name": "额定输出电压"
+      },
+      "power_source": {
+        "name": "供电来源",
+        "state": {
+          "unknown": "未知",
+          "utility": "市电",
+          "generator": "发电机"
+        }
+      },
+      "engine_speed": {
+        "name": "发动机转速"
+      },
+      "engine_frequency": {
+        "name": "发电机频率"
+      },
+      "engine_oil_pressure": {
+        "name": "机油压力"
+      },
+      "engine_coolant_temperature": {
+        "name": "冷却液温度"
+      },
+      "lube_oil_temperature": {
+        "name": "机油温度"
+      },
+      "engine_compartment_temperature": {
+        "name": "发动机舱温度"
+      },
+      "engine_state": {
+        "name": "发动机状态",
+        "state": {
+          "off": "关闭",
+          "crank_on": "启动中",
+          "crank_pause": "启动间歇",
+          "idle": "怠速",
+          "running": "运行中",
+          "cool_down": "冷却中",
+          "stopping": "停止中",
+          "shutdown": "停机",
+          "performing_loaded_test": "带载测试中",
+          "performing_unloaded_test": "空载测试中",
+          "performing_variable_speed_exercise": "变速试机中",
+          "performing_loaded_exercise": "带载试机中",
+          "fuel_priming": "燃油预供",
+          "ecm_powered": "ECM 已通电",
+          "fault_cool_down": "故障冷却",
+          "standby": "待机",
+          "preheat": "预热",
+          "performing_unloaded_full_speed_exercise": "空载全速试机中",
+          "performing_full_speed_diagnostics": "全速诊断中",
+          "unloading": "卸载中",
+          "stopped_by_generator_management": "由发电机管理停止",
+          "synchronizing": "同步中",
+          "protective_relay_tripped_contactor": "保护继电器跳闸",
+          "start_delay": "启动延时",
+          "stationary_regen": "驻车再生",
+          "choke": "阻风门",
+          "performing_eco_cycle": "EcoExercise 运行中"
+        }
+      },
+      "fuel_level": {
+        "name": "燃料液位"
+      },
+      "battery_voltage": {
+        "name": "电池电压"
+      },
+      "controller_temperature": {
+        "name": "控制器温度"
+      },
+      "controller_clock": {
+        "name": "控制器时钟"
+      },
+      "status": {
+        "name": "状态",
+        "state": {
+          "ready_to_run": "准备就绪",
+          "shutdown": "停机",
+          "switch_state_off": "已关闭",
+          "running": "运行中",
+          "running_exercise": "试机中",
+          "offline": "离线"
+        }
+      },
+      "switch_state": {
+        "name": "模式开关",
+        "state": {
+          "off": "关闭",
+          "auto": "Auto",
+          "manual": "手动"
+        }
+      },
+      "shutdown_reason": {
+        "name": "停机原因"
+      },
+      "alert_count": {
+        "name": "当前警报"
+      },
+      "total_runtime": {
+        "name": "总运行时间"
+      },
+      "total_operation": {
+        "name": "总工作时间"
+      },
+      "runtime_since_maintenance": {
+        "name": "维护后运行时间"
+      },
+      "last_run": {
+        "name": "上次运行"
+      },
+      "last_maintenance": {
+        "name": "上次维护"
+      },
+      "next_maintenance": {
+        "name": "下次维护"
+      },
+      "maintenance_period": {
+        "name": "维护间隔"
+      },
+      "last_maintenance_note": {
+        "name": "最新维护备注"
+      },
+      "next_exercise": {
+        "name": "下次试机"
+      },
+      "last_exercise_start": {
+        "name": "上次试机开始"
+      },
+      "last_exercise_end": {
+        "name": "上次试机结束"
+      },
+      "exercise_running_mode": {
+        "name": "当前试机",
+        "state": {
+          "none": "无",
+          "unloaded": "空载",
+          "unloaded_full_speed": "空载全速",
+          "loaded_full_speed": "带载全速",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "last_event": {
+        "name": "最近活动"
+      },
+      "last_notification": {
+        "name": "最近通知"
+      },
+      "weather_temperature": {
+        "name": "室外温度"
+      },
+      "weather_condition": {
+        "name": "天气",
+        "state": {
+          "clear_sky": "晴",
+          "few_clouds": "少云",
+          "scattered_clouds": "多云",
+          "broken_clouds": "多云间阴",
+          "shower_rain": "阵雨",
+          "rain": "雨",
+          "thunderstorm": "雷暴",
+          "snow": "雪",
+          "mist": "薄雾",
+          "unknown": "未知"
+        }
+      },
+      "model": {
+        "name": "型号"
+      },
+      "product": {
+        "name": "控制器产品"
+      },
+      "controller_type": {
+        "name": "控制器类型"
+      },
+      "firmware_version": {
+        "name": "固件版本"
+      },
+      "current_firmware": {
+        "name": "固件构建版本"
+      },
+      "fuel_type": {
+        "name": "燃料类型",
+        "state": {
+          "natural_gas": "天然气",
+          "liquid_propane": "液化丙烷（LP）",
+          "gasoline": "汽油",
+          "diesel": "柴油",
+          "unknown_undefined": "未知"
+        }
+      },
+      "cooling_type": {
+        "name": "冷却方式",
+        "state": {
+          "unknown": "未知",
+          "air": "风冷",
+          "liquid": "液冷"
+        }
+      },
+      "connection_type": {
+        "name": "连接方式",
+        "state": {
+          "unknown": "未知",
+          "ethernet": "以太网",
+          "kohler_wifi": "Kohler Wi-Fi",
+          "other_wifi": "其他 Wi-Fi",
+          "cellular": "蜂窝网络",
+          "kohler_cell_kit": "Kohler 蜂窝套件"
+        }
+      },
+      "device_ip_address": {
+        "name": "IP 地址"
+      },
+      "server_ip_address": {
+        "name": "服务器 IP 地址"
+      },
+      "mac_address": {
+        "name": "MAC 地址"
+      },
+      "last_connected": {
+        "name": "上次连接"
+      },
+      "status_updated": {
+        "name": "状态更新时间"
+      },
+      "parameters_updated": {
+        "name": "参数更新时间"
+      },
+      "uptime_percent": {
+        "name": "连接在线率"
+      },
+      "remote_reset_counter": {
+        "name": "远程复位倒计时"
+      },
+      "wifi_strength": {
+        "name": "Wi-Fi 信号",
+        "state": {
+          "weak": "弱",
+          "moderate": "中",
+          "strong": "强"
+        }
+      },
+      "cellular_strength": {
+        "name": "蜂窝信号",
+        "state": {
+          "weak": "弱",
+          "moderate": "中",
+          "strong": "强"
+        }
+      },
+      "site_address": {
+        "name": "安装地址"
+      },
+      "dealer": {
+        "name": "经销商"
+      },
+      "service_agreement_status": {
+        "name": "服务协议",
+        "state": {
+          "active": "有效",
+          "expired": "已过期",
+          "missing_data": "数据缺失",
+          "none": "无"
+        }
+      },
+      "cellular_data_status": {
+        "name": "蜂窝数据",
+        "state": {
+          "active": "正常",
+          "near_data_limit": "接近数据上限",
+          "reached_data_limit": "已达数据上限",
+          "unknown": "未知"
+        }
+      },
+      "cellular_data_used": {
+        "name": "已用蜂窝数据"
+      },
+      "cellular_expiry": {
+        "name": "蜂窝套餐到期时间"
+      },
+      "cellular_installed": {
+        "name": "蜂窝套件安装时间"
+      },
+      "cell_kit_payment_status": {
+        "name": "蜂窝套餐付款",
+        "state": {
+          "paid": "已付款",
+          "in_progress": "处理中",
+          "renewal_failed": "续订失败",
+          "unknown": "未知"
+        }
+      },
+      "cell_data_remaining": {
+        "name": "剩余蜂窝数据"
+      },
+      "scheduled_firmware_update": {
+        "name": "计划固件更新"
+      },
+      "install_progress": {
+        "name": "安装进度"
+      },
+      "ats_power_source": {
+        "name": "转换开关位置",
+        "state": {
+          "unknown": "未知",
+          "utility": "市电",
+          "generator": "发电机"
+        }
+      },
+      "ats_connection_type": {
+        "name": "转换开关连接",
+        "state": {
+          "hardwired": "有线",
+          "ism": "ISM 无线"
+        }
+      },
+      "ats_signal_strength": {
+        "name": "转换开关信号",
+        "state": {
+          "weak": "弱",
+          "moderate": "中",
+          "strong": "强"
+        }
+      },
+      "load_module_parameter": {
+        "name": "负载管理模块 {name}"
+      },
+      "pim_parameter": {
+        "name": "PIM {name}"
+      },
+      "extra_field": {
+        "name": "{field}"
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "云端连接"
+      },
+      "utility_power": {
+        "name": "市电供电"
+      },
+      "on_generator_power": {
+        "name": "发电机供电"
+      },
+      "running": {
+        "name": "运行中"
+      },
+      "exercising": {
+        "name": "试机中"
+      },
+      "ready_to_run": {
+        "name": "准备就绪"
+      },
+      "not_in_auto": {
+        "name": "未处于 Auto 模式"
+      },
+      "oil_pressure_problem": {
+        "name": "机油压力"
+      },
+      "maintenance_due": {
+        "name": "维护到期"
+      },
+      "active_alerts": {
+        "name": "警报"
+      },
+      "critical_fault": {
+        "name": "严重故障"
+      },
+      "e_stop": {
+        "name": "紧急停机"
+      },
+      "exercise_scheduled": {
+        "name": "已计划试机"
+      },
+      "service_agreement": {
+        "name": "服务协议"
+      },
+      "cellular_kit_online": {
+        "name": "蜂窝套件"
+      },
+      "wifi_connected": {
+        "name": "Wi-Fi"
+      },
+      "cellular_connected": {
+        "name": "蜂窝网络"
+      },
+      "load_module_connected": {
+        "name": "负载管理模块"
+      },
+      "pim_connected": {
+        "name": "PIM"
+      },
+      "firmware_update_available": {
+        "name": "有可用固件更新"
+      },
+      "extra_flag": {
+        "name": "{field}"
+      }
+    },
+    "button": {
+      "start_exercise": {
+        "name": "开始试机"
+      },
+      "stop_exercise": {
+        "name": "停止试机"
+      },
+      "sync_controller_clock": {
+        "name": "同步控制器时钟"
+      },
+      "refresh": {
+        "name": "刷新"
+      }
+    },
+    "select": {
+      "exercise_mode": {
+        "name": "试机模式",
+        "state": {
+          "unloaded": "空载",
+          "unloaded_full_speed": "空载全速",
+          "loaded_full_speed": "带载全速",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "exercise_frequency": {
+        "name": "试机频率",
+        "state": {
+          "weekly": "每周",
+          "every_other_week": "每两周",
+          "monthly": "每月"
+        }
+      }
+    },
+    "number": {
+      "exercise_duration": {
+        "name": "试机时长"
+      },
+      "load_module_setting": {
+        "name": "负载管理模块 {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "datetime": {
+      "next_exercise_start": {
+        "name": "下次试机开始时间"
+      }
+    },
+    "switch": {
+      "notify_shutdowns": {
+        "name": "停机通知"
+      },
+      "notify_warnings": {
+        "name": "警告通知"
+      },
+      "notify_running": {
+        "name": "发电机运行通知"
+      },
+      "notify_notices": {
+        "name": "一般通知"
+      },
+      "notify_connection": {
+        "name": "连接通知"
+      },
+      "notify_maintenance": {
+        "name": "维护提醒"
+      },
+      "notify_long_running": {
+        "name": "长时间运行通知"
+      },
+      "notify_emails": {
+        "name": "电子邮件通知"
+      },
+      "notify_push": {
+        "name": "推送通知"
+      },
+      "notify_other": {
+        "name": "{name} 通知"
+      },
+      "auto_firmware_update": {
+        "name": "自动固件更新"
+      },
+      "load_module_setting": {
+        "name": "负载管理模块 {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "text": {
+      "generator_name": {
+        "name": "发电机名称"
+      },
+      "load_module_setting": {
+        "name": "负载管理模块 {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "活动",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "none": "无",
+              "status": "状态",
+              "warning": "警告",
+              "fault": "故障",
+              "shutdown": "停机",
+              "notice": "通知",
+              "system_status_change": "系统状态变更"
+            }
+          }
+        }
+      },
+      "alerts": {
+        "name": "警报",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "raised": "已触发",
+              "cleared": "已清除"
+            }
+          }
+        }
+      },
+      "notifications": {
+        "name": "通知",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "shutdown": "停机",
+              "warning": "警告",
+              "maintenance_notice": "维护通知",
+              "long_running_notice": "长时间运行通知",
+              "notice": "通知",
+              "engine_started_notice": "发动机已启动",
+              "engine_stopped_notice": "发动机已停止",
+              "exercise_started_notice": "试机已开始",
+              "exercise_ended_notice": "试机已结束",
+              "online_notice": "恢复在线",
+              "offline_notice": "已离线"
+            }
+          }
+        }
+      },
+      "power": {
+        "name": "电力事件",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "utility_lost": "市电中断",
+              "utility_restored": "市电恢复",
+              "generator_started": "发电机已启动",
+              "generator_stopped": "发电机已停止",
+              "transferred_to_generator": "负载已切换至发电机",
+              "transferred_to_utility": "负载已切换至市电"
+            }
+          }
+        }
+      }
+    },
+    "calendar": {
+      "schedule": {
+        "name": "试机与维护",
+        "state_attributes": {
+          "message": {
+            "state": {
+              "exercise": "试机",
+              "last_exercise": "上次试机",
+              "maintenance_due": "维护到期"
+            }
+          },
+          "description": {
+            "state": {
+              "last_exercise": "发电机报告的最近一次试机。",
+              "scheduled": "下一次计划试机。",
+              "projected": "根据试机计划推算。",
+              "maintenance_due": "发电机的下一次计划维护。"
+            }
+          }
+        }
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "控制器固件",
+        "state_attributes": {
+          "release_summary": {
+            "state": {
+              "released": "发布于 {date}。",
+              "scheduled": "计划于 {date} 安装。",
+              "auto_update_off": "此发电机已关闭自动固件更新。"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_generator": {
+      "message": "发电机 {device_id} 不属于此账户。"
+    },
+    "auth_failed": {
+      "message": "Rehlko 拒绝了已保存的凭据；已请求重新认证。"
+    },
+    "api_error": {
+      "message": "Rehlko 服务拒绝了请求（HTTP {status}）：{message}"
+    },
+    "unavailable": {
+      "message": "Rehlko 服务不可用：{message}"
+    },
+    "offline": {
+      "message": "{name} 已离线；在其重新连接之前，远程操作不可用。"
+    },
+    "e_stop": {
+      "message": "{name} 的紧急停机已触发。在发电机上将其复位之前，远程启动和远程试机不可用。"
+    },
+    "not_ready": {
+      "message": "{name} 尚未准备就绪（状态：{status}）；无法开始试机。"
+    },
+    "no_scheduling": {
+      "message": "{name} 的控制器不支持远程设置试机计划。"
+    },
+    "empty_note": {
+      "message": "维护备注为空。"
+    },
+    "empty_name": {
+      "message": "名称为空。"
+    },
+    "read_only": {
+      "message": "{name} 为只读。"
+    },
+    "device_not_found": {
+      "message": "未找到设备 {device_id}。"
+    },
+    "not_a_generator": {
+      "message": "设备 {device_id} 不是 Rehlko 发电机。"
+    },
+    "entry_not_loaded": {
+      "message": "设备 {device_id} 所属的账户未加载。"
+    },
+    "no_serial": {
+      "message": "服务未报告该控制器的序列号。"
+    }
+  },
+  "services": {
+    "start_exercise": {
+      "name": "开始试机",
+      "description": "立即开始一次试机（即应用中的“Start an exercise now”）。发电机必须在线、处于 Auto 模式且准备就绪。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        },
+        "mode": {
+          "name": "模式",
+          "description": "试机的运行方式；默认使用计划试机的模式。"
+        }
+      }
+    },
+    "stop_exercise": {
+      "name": "停止试机",
+      "description": "停止正在进行的试机。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        }
+      }
+    },
+    "set_exercise_schedule": {
+      "name": "设置试机计划",
+      "description": "创建或修改定期试机。未填写的字段保持当前值。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        },
+        "frequency": {
+          "name": "频率",
+          "description": "每周、每两周或每月。"
+        },
+        "mode": {
+          "name": "模式",
+          "description": "空载、空载全速、带载全速或 EcoExercise。"
+        },
+        "duration": {
+          "name": "时长",
+          "description": "运行时间（分钟）。"
+        },
+        "next_start": {
+          "name": "下次开始时间",
+          "description": "下次试机的开始时间（仅适用于允许选择该时间的控制器）。"
+        }
+      }
+    },
+    "delete_exercise_schedule": {
+      "name": "删除试机计划",
+      "description": "删除定期试机。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        }
+      }
+    },
+    "add_maintenance_note": {
+      "name": "添加维护备注",
+      "description": "向发电机的维护历史添加一条记录。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        },
+        "note": {
+          "name": "备注",
+          "description": "已完成的工作。"
+        }
+      }
+    },
+    "sync_controller_clock": {
+      "name": "同步控制器时钟",
+      "description": "设置控制器的时钟（未指定时间时设为当前时间）。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        },
+        "timestamp": {
+          "name": "时间",
+          "description": "要设置的时间；默认为当前时间。"
+        }
+      }
+    },
+    "set_peripheral_value": {
+      "name": "设置负载管理模块 / PIM 的值",
+      "description": "写入一个负载管理模块或 PIM 参数。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        },
+        "definition_id": {
+          "name": "定义 ID",
+          "description": "参数的定义 ID（实体属性之一）。"
+        },
+        "value": {
+          "name": "值",
+          "description": "要写入的值。"
+        }
+      }
+    },
+    "rename_peripheral": {
+      "name": "重命名负载管理模块 / PIM 项",
+      "description": "更改负载管理模块或 PIM 参数的显示名称。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        },
+        "definition_id": {
+          "name": "定义 ID",
+          "description": "参数的定义 ID。"
+        },
+        "name": {
+          "name": "名称",
+          "description": "新名称。"
+        }
+      }
+    },
+    "refresh": {
+      "name": "刷新",
+      "description": "立即轮询全部数据，包括活动日志和维护历史。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "仅刷新此发电机所属的账户；省略则刷新所有账户。"
+        }
+      }
+    },
+    "get_activity_log": {
+      "name": "获取活动日志",
+      "description": "返回发电机的活动（事件）日志。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        },
+        "limit": {
+          "name": "数量上限",
+          "description": "最多返回的条目数，最新的在前。"
+        }
+      }
+    },
+    "get_alerts": {
+      "name": "获取当前警报",
+      "description": "返回发电机的当前警报。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        }
+      }
+    },
+    "get_maintenance_history": {
+      "name": "获取维护历史",
+      "description": "返回维护备注和维护计划。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        }
+      }
+    },
+    "get_notifications": {
+      "name": "获取通知",
+      "description": "返回该发电机的应用通知。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        },
+        "limit": {
+          "name": "数量上限",
+          "description": "最多返回的通知数，最新的在前。"
+        }
+      }
+    },
+    "get_generator_data": {
+      "name": "获取发电机数据",
+      "description": "按服务发送的原样返回原始的设备和详情数据。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        }
+      }
+    },
+    "get_parameter_definitions": {
+      "name": "获取参数定义",
+      "description": "返回控制器的参数目录（名称、类型、范围、单位）。",
+      "fields": {
+        "device_id": {
+          "name": "发电机",
+          "description": "要操作的发电机（或其转换开关）。"
+        },
+        "kind": {
+          "name": "控制器",
+          "description": "发电机的控制器或转换开关的控制器。"
+        }
+      }
+    }
+  }
+}

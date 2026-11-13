@@ -1,0 +1,46 @@
+[project]
+name = "ha-rehlko"
+version = "1.00"
+description = "Home Assistant integration and sidebar panel for Rehlko (formerly Kohler) home standby generators."
+requires-python = ">=3.13"
+license = { file = "LICENSE" }
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+# The reverse-engineering scripts are archival reproduction tooling (one-shot analysis of the
+# app binary), not part of the integration; they keep their original shape on purpose.
+extend-exclude = ["scripts/reverse_engineering"]
+
+[tool.ruff.lint]
+select = [
+    "F",      # pyflakes: undefined names, unused imports and variables
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "B",      # bugbear: likely bugs, mutable defaults, unused loop vars
+    "I",      # import sorting
+    "UP",     # pyupgrade
+    "SIM",    # simplifiable constructs
+    "RUF",    # Ruff's own checks
+]
+ignore = [
+    "E501",    # line length is the formatter's job
+    "B008",    # function calls in defaults are deliberate in voluptuous schemas
+    "RUF001",  # typographic characters in strings are intentional
+    "RUF002",
+    "RUF003",
+    "SIM105",
+    "UP031",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.coverage.run]
+source = ["custom_components/rehlko_energy"]

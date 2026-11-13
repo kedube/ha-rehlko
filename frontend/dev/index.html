@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Generator panel preview</title>
+    <style>
+      html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+      body { display: flex; flex-direction: column; }
+      .demo { background: #192c20; color: white; padding: 10px 16px; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+      .demo select { margin-left: 6px; }
+      .demo.hidden { display: none; }
+      rehlko-energy-panel { flex: 1; min-height: 0; }
+    </style>
+  </head>
+  <body>
+    <!-- Every control can also be set in the URL, e.g. ?state=Running&lang=es&theme=Dark&units=Metric&tab=controls&narrow=1&bar=0 -->
+    <div class="demo">Local preview · sample data · actions are simulated
+      <label>State <select id="state"><option>Standby</option><option>Running</option><option>Exercising</option><option>Offline</option><option>Stale</option><option>Fault</option><option>Empty</option></select></label>
+      <label>Model <select id="model"><option>26RCA</option><option>20RCA</option><option>14RCA</option><option>12RESV</option><option>24RCL</option><option>30RCLA</option><option>48RCLC</option><option>60RCLB</option><option>Other</option></select></label>
+      <label>Theme <select id="theme"><option>Light</option><option>Dark</option></select></label>
+      <label>Language <select id="lang"></select></label>
+      <label>Units <select id="units"><option>US</option><option>Metric</option></select></label>
+    </div>
+    <rehlko-energy-panel></rehlko-energy-panel>
+    <script type="module" src="/frontend/dev/main.ts"></script>
+  </body>
+</html>

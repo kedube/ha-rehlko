@@ -1,0 +1,1003 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connexion à Rehlko Energy Management",
+        "description": "Utilisez l'adresse courriel et le mot de passe que vous utilisez dans l'application Energy Mgmt. (anciennement KOHLER Energy Management). Les identifiants de l'application ci-dessous permettent d'identifier l'application auprès du service de connexion de Rehlko. Consultez la documentation de l'intégration pour savoir où les trouver.",
+        "data": {
+          "username": "Adresse courriel",
+          "password": "Mot de passe"
+        },
+        "data_description": {
+          "username": "L'adresse courriel de votre compte Rehlko / Kohler Energy Management.",
+          "password": "Conservé dans Home Assistant pour que l'intégration puisse se reconnecter lorsque sa session expire."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "Identifiants de l'application",
+            "description": "L'ID client OAuth, le secret client et la clé d'API provenant de la configuration de l'application Energy Mgmt.",
+            "data": {
+              "client_id": "ID client OAuth",
+              "client_secret": "Secret client OAuth",
+              "api_key": "Clé d'API"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID dans le fichier de configuration de l'application.",
+              "client_secret": "CLIENT_SECRET dans le fichier de configuration de l'application.",
+              "api_key": "API_KEY dans le fichier de configuration de l'application."
+            }
+          }
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnexion",
+        "description": "Rehlko demande de nouveau le mot de passe du compte {username}.",
+        "data": {
+          "password": "Mot de passe"
+        },
+        "data_description": {
+          "password": "Conservé dans Home Assistant pour que l'intégration puisse se reconnecter lorsque sa session expire."
+        }
+      },
+      "reconfigure": {
+        "title": "Mettre à jour les identifiants",
+        "description": "Mettez à jour le mot de passe ou les identifiants de l'application pour le compte {username} (par exemple après une mise à jour de l'application qui les a modifiés).",
+        "data": {
+          "password": "Mot de passe"
+        },
+        "data_description": {
+          "password": "Conservé dans Home Assistant pour que l'intégration puisse se reconnecter lorsque sa session expire."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "Identifiants de l'application",
+            "description": "L'ID client OAuth, le secret client et la clé d'API provenant de la configuration de l'application Energy Mgmt.",
+            "data": {
+              "client_id": "ID client OAuth",
+              "client_secret": "Secret client OAuth",
+              "api_key": "Clé d'API"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID dans le fichier de configuration de l'application.",
+              "client_secret": "Laissez vide pour conserver la valeur enregistrée.",
+              "api_key": "Laissez vide pour conserver la valeur enregistrée."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "L'adresse courriel ou le mot de passe n'a pas été accepté.",
+      "sign_in_denied": "Le service de connexion de Rehlko a refusé la connexion par mot de passe pour ce compte. Cela se produit lorsque le compte exige une authentification multifacteur, que cette intégration ne peut pas effectuer.",
+      "invalid_app_credentials": "Le service de connexion a refusé l'ID client ou le secret client de l'application.",
+      "invalid_api_key": "Connexion réussie, mais l'API a refusé la requête. Vérifiez la clé d'API.",
+      "cannot_connect": "Impossible de joindre le service Rehlko.",
+      "no_generators": "Connexion réussie, mais ce compte ne comporte aucune génératrice.",
+      "unknown": "Erreur inattendue. Consultez les journaux."
+    },
+    "abort": {
+      "already_configured": "Ce compte est déjà configuré.",
+      "reauth_successful": "Reconnexion réussie.",
+      "reconfigure_successful": "Identifiants mis à jour.",
+      "wrong_account": "Ces identifiants appartiennent à un autre compte."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options de Rehlko Energy Management",
+        "data": {
+          "scan_interval": "Intervalle d'interrogation en veille",
+          "active_scan_interval": "Intervalle d'interrogation en marche ou pendant une panne de courant",
+          "feed_interval": "Intervalle du journal d'activité, des alertes et des notifications",
+          "notification_limit": "Notifications à récupérer par génératrice",
+          "sidebar_panel": "Afficher le panneau de la génératrice dans la barre latérale",
+          "extra_diagnostic_entities": "Créer des entités de diagnostic pour tous les autres champs de l'API"
+        },
+        "data_description": {
+          "scan_interval": "Fréquence de lecture de la génératrice lorsqu'elle est en veille.",
+          "active_scan_interval": "Utilisé lorsque le moteur tourne, pendant un exercice ou lorsque la maison est alimentée par la génératrice.",
+          "feed_interval": "Ces listes changent rarement. Un intervalle plus long réduit le nombre de requêtes.",
+          "notification_limit": "Les notifications les plus récentes sont récupérées en premier.",
+          "sidebar_panel": "Le panneau n'est visible que par les administrateurs.",
+          "extra_diagnostic_entities": "Elles sont créées désactivées : rien de ce que le service signale n'est masqué et rien n'est enregistré tant que vous ne les activez pas sur la page de l'appareil."
+        }
+      }
+    }
+  },
+  "selector": {
+    "exercise_mode": {
+      "options": {
+        "unloaded": "À vide",
+        "unloaded_full_speed": "À vide, plein régime",
+        "loaded_full_speed": "En charge, plein régime",
+        "eco_exercise": "EcoExercise"
+      }
+    },
+    "exercise_frequency": {
+      "options": {
+        "weekly": "Chaque semaine",
+        "every_other_week": "Toutes les deux semaines",
+        "monthly": "Chaque mois"
+      }
+    },
+    "controller_kind": {
+      "options": {
+        "generator": "Génératrice",
+        "ats": "Commutateur de transfert"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "utility_voltage": {
+        "name": "Tension du réseau"
+      },
+      "generator_voltage": {
+        "name": "Tension de la génératrice"
+      },
+      "generator_load": {
+        "name": "Charge de la génératrice"
+      },
+      "generator_load_percent": {
+        "name": "Taux de charge de la génératrice"
+      },
+      "energy_produced": {
+        "name": "Énergie produite"
+      },
+      "set_output_voltage": {
+        "name": "Tension de sortie nominale"
+      },
+      "power_source": {
+        "name": "Source d'alimentation",
+        "state": {
+          "unknown": "Inconnu",
+          "utility": "Réseau",
+          "generator": "Génératrice"
+        }
+      },
+      "engine_speed": {
+        "name": "Régime moteur"
+      },
+      "engine_frequency": {
+        "name": "Fréquence de la génératrice"
+      },
+      "engine_oil_pressure": {
+        "name": "Pression d'huile"
+      },
+      "engine_coolant_temperature": {
+        "name": "Température du liquide de refroidissement"
+      },
+      "lube_oil_temperature": {
+        "name": "Température de l'huile de lubrification"
+      },
+      "engine_compartment_temperature": {
+        "name": "Température du compartiment moteur"
+      },
+      "engine_state": {
+        "name": "État du moteur",
+        "state": {
+          "off": "À l'arrêt",
+          "crank_on": "Lancement",
+          "crank_pause": "Pause de lancement",
+          "idle": "Au ralenti",
+          "running": "En marche",
+          "cool_down": "Refroidissement",
+          "stopping": "Arrêt en cours",
+          "shutdown": "Arrêt de sécurité",
+          "performing_loaded_test": "Essai en charge en cours",
+          "performing_unloaded_test": "Essai à vide en cours",
+          "performing_variable_speed_exercise": "Exercice à régime variable en cours",
+          "performing_loaded_exercise": "Exercice en charge en cours",
+          "fuel_priming": "Amorçage du carburant",
+          "ecm_powered": "ECM sous tension",
+          "fault_cool_down": "Refroidissement après défaut",
+          "standby": "En veille",
+          "preheat": "Préchauffage",
+          "performing_unloaded_full_speed_exercise": "Exercice à vide à plein régime en cours",
+          "performing_full_speed_diagnostics": "Diagnostic à plein régime en cours",
+          "unloading": "Retrait de la charge",
+          "stopped_by_generator_management": "Arrêt par la gestion des génératrices",
+          "synchronizing": "Synchronisation",
+          "protective_relay_tripped_contactor": "Relais de protection déclenché",
+          "start_delay": "Délai de démarrage",
+          "stationary_regen": "Régénération stationnaire",
+          "choke": "Étrangleur",
+          "performing_eco_cycle": "EcoExercise en cours"
+        }
+      },
+      "fuel_level": {
+        "name": "Niveau de carburant"
+      },
+      "battery_voltage": {
+        "name": "Tension de la batterie"
+      },
+      "controller_temperature": {
+        "name": "Température du contrôleur"
+      },
+      "controller_clock": {
+        "name": "Horloge du contrôleur"
+      },
+      "status": {
+        "name": "État",
+        "state": {
+          "ready_to_run": "Prête à démarrer",
+          "shutdown": "Arrêt de sécurité",
+          "switch_state_off": "Sélecteur sur Arrêt",
+          "running": "En marche",
+          "running_exercise": "En exercice",
+          "offline": "Hors ligne"
+        }
+      },
+      "switch_state": {
+        "name": "Sélecteur de mode",
+        "state": {
+          "off": "Arrêt",
+          "auto": "Auto",
+          "manual": "Manuel"
+        }
+      },
+      "shutdown_reason": {
+        "name": "Cause de l'arrêt de sécurité"
+      },
+      "alert_count": {
+        "name": "Alertes actives"
+      },
+      "total_runtime": {
+        "name": "Temps de fonctionnement total"
+      },
+      "total_operation": {
+        "name": "Temps de service total"
+      },
+      "runtime_since_maintenance": {
+        "name": "Temps de fonctionnement depuis l'entretien"
+      },
+      "last_run": {
+        "name": "Dernier fonctionnement"
+      },
+      "last_maintenance": {
+        "name": "Dernier entretien"
+      },
+      "next_maintenance": {
+        "name": "Prochain entretien"
+      },
+      "maintenance_period": {
+        "name": "Intervalle d'entretien"
+      },
+      "last_maintenance_note": {
+        "name": "Dernière note d'entretien"
+      },
+      "next_exercise": {
+        "name": "Prochain exercice"
+      },
+      "last_exercise_start": {
+        "name": "Début du dernier exercice"
+      },
+      "last_exercise_end": {
+        "name": "Fin du dernier exercice"
+      },
+      "exercise_running_mode": {
+        "name": "Exercice en cours",
+        "state": {
+          "none": "Aucun",
+          "unloaded": "À vide",
+          "unloaded_full_speed": "À vide, plein régime",
+          "loaded_full_speed": "En charge, plein régime",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "last_event": {
+        "name": "Dernière activité"
+      },
+      "last_notification": {
+        "name": "Dernière notification"
+      },
+      "weather_temperature": {
+        "name": "Température extérieure"
+      },
+      "weather_condition": {
+        "name": "Météo",
+        "state": {
+          "clear_sky": "Ciel dégagé",
+          "few_clouds": "Peu nuageux",
+          "scattered_clouds": "Partiellement nuageux",
+          "broken_clouds": "Généralement nuageux",
+          "shower_rain": "Averses",
+          "rain": "Pluie",
+          "thunderstorm": "Orage",
+          "snow": "Neige",
+          "mist": "Brume",
+          "unknown": "Inconnu"
+        }
+      },
+      "model": {
+        "name": "Modèle"
+      },
+      "product": {
+        "name": "Produit du contrôleur"
+      },
+      "controller_type": {
+        "name": "Type de contrôleur"
+      },
+      "firmware_version": {
+        "name": "Version du micrologiciel"
+      },
+      "current_firmware": {
+        "name": "Build du micrologiciel"
+      },
+      "fuel_type": {
+        "name": "Type de carburant",
+        "state": {
+          "natural_gas": "Gaz naturel",
+          "liquid_propane": "Propane (GPL)",
+          "gasoline": "Essence",
+          "diesel": "Diesel",
+          "unknown_undefined": "Inconnu"
+        }
+      },
+      "cooling_type": {
+        "name": "Refroidissement",
+        "state": {
+          "unknown": "Inconnu",
+          "air": "Air",
+          "liquid": "Liquide"
+        }
+      },
+      "connection_type": {
+        "name": "Connexion",
+        "state": {
+          "unknown": "Inconnu",
+          "ethernet": "Ethernet",
+          "kohler_wifi": "Wi-Fi Kohler",
+          "other_wifi": "Autre Wi-Fi",
+          "cellular": "Réseau cellulaire",
+          "kohler_cell_kit": "Ensemble cellulaire Kohler"
+        }
+      },
+      "device_ip_address": {
+        "name": "Adresse IP"
+      },
+      "server_ip_address": {
+        "name": "Adresse IP du serveur"
+      },
+      "mac_address": {
+        "name": "Adresse MAC"
+      },
+      "last_connected": {
+        "name": "Dernière connexion"
+      },
+      "status_updated": {
+        "name": "Mise à jour de l'état"
+      },
+      "parameters_updated": {
+        "name": "Mise à jour des paramètres"
+      },
+      "uptime_percent": {
+        "name": "Disponibilité de la connexion"
+      },
+      "remote_reset_counter": {
+        "name": "Compte à rebours de réinitialisation à distance"
+      },
+      "wifi_strength": {
+        "name": "Signal Wi-Fi",
+        "state": {
+          "weak": "Faible",
+          "moderate": "Moyen",
+          "strong": "Fort"
+        }
+      },
+      "cellular_strength": {
+        "name": "Signal cellulaire",
+        "state": {
+          "weak": "Faible",
+          "moderate": "Moyen",
+          "strong": "Fort"
+        }
+      },
+      "site_address": {
+        "name": "Adresse du site"
+      },
+      "dealer": {
+        "name": "Concessionnaire"
+      },
+      "service_agreement_status": {
+        "name": "Contrat de service",
+        "state": {
+          "active": "Actif",
+          "expired": "Expiré",
+          "missing_data": "Données manquantes",
+          "none": "Aucun"
+        }
+      },
+      "cellular_data_status": {
+        "name": "État des données cellulaires",
+        "state": {
+          "active": "Actif",
+          "near_data_limit": "Proche de la limite de données",
+          "reached_data_limit": "Limite de données atteinte",
+          "unknown": "Inconnu"
+        }
+      },
+      "cellular_data_used": {
+        "name": "Données cellulaires utilisées"
+      },
+      "cellular_expiry": {
+        "name": "Expiration du forfait cellulaire"
+      },
+      "cellular_installed": {
+        "name": "Installation de l'ensemble cellulaire"
+      },
+      "cell_kit_payment_status": {
+        "name": "Paiement du forfait cellulaire",
+        "state": {
+          "paid": "Payé",
+          "in_progress": "En cours",
+          "renewal_failed": "Échec du renouvellement",
+          "unknown": "Inconnu"
+        }
+      },
+      "cell_data_remaining": {
+        "name": "Données cellulaires restantes"
+      },
+      "scheduled_firmware_update": {
+        "name": "Mise à jour planifiée du micrologiciel"
+      },
+      "install_progress": {
+        "name": "Progression de l'installation"
+      },
+      "ats_power_source": {
+        "name": "Position du commutateur de transfert",
+        "state": {
+          "unknown": "Inconnu",
+          "utility": "Réseau",
+          "generator": "Génératrice"
+        }
+      },
+      "ats_connection_type": {
+        "name": "Liaison du commutateur de transfert",
+        "state": {
+          "hardwired": "Filaire",
+          "ism": "Radio ISM"
+        }
+      },
+      "ats_signal_strength": {
+        "name": "Signal du commutateur de transfert",
+        "state": {
+          "weak": "Faible",
+          "moderate": "Moyen",
+          "strong": "Fort"
+        }
+      },
+      "load_module_parameter": {
+        "name": "Module de délestage {name}"
+      },
+      "pim_parameter": {
+        "name": "PIM {name}"
+      },
+      "extra_field": {
+        "name": "{field}"
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "Connexion au cloud"
+      },
+      "utility_power": {
+        "name": "Alimentation du réseau"
+      },
+      "on_generator_power": {
+        "name": "Alimentation par la génératrice"
+      },
+      "running": {
+        "name": "En marche"
+      },
+      "exercising": {
+        "name": "En exercice"
+      },
+      "ready_to_run": {
+        "name": "Prête à démarrer"
+      },
+      "not_in_auto": {
+        "name": "Hors mode Auto"
+      },
+      "oil_pressure_problem": {
+        "name": "Pression d'huile"
+      },
+      "maintenance_due": {
+        "name": "Entretien requis"
+      },
+      "active_alerts": {
+        "name": "Alertes"
+      },
+      "critical_fault": {
+        "name": "Défaut critique"
+      },
+      "e_stop": {
+        "name": "Arrêt d'urgence"
+      },
+      "exercise_scheduled": {
+        "name": "Exercice planifié"
+      },
+      "service_agreement": {
+        "name": "Contrat de service"
+      },
+      "cellular_kit_online": {
+        "name": "Ensemble cellulaire"
+      },
+      "wifi_connected": {
+        "name": "Wi-Fi"
+      },
+      "cellular_connected": {
+        "name": "Réseau cellulaire"
+      },
+      "load_module_connected": {
+        "name": "Module de délestage"
+      },
+      "pim_connected": {
+        "name": "PIM"
+      },
+      "firmware_update_available": {
+        "name": "Mise à jour du micrologiciel disponible"
+      },
+      "extra_flag": {
+        "name": "{field}"
+      }
+    },
+    "button": {
+      "start_exercise": {
+        "name": "Démarrer un exercice"
+      },
+      "stop_exercise": {
+        "name": "Arrêter l'exercice"
+      },
+      "sync_controller_clock": {
+        "name": "Synchroniser l'horloge du contrôleur"
+      },
+      "refresh": {
+        "name": "Actualiser"
+      }
+    },
+    "select": {
+      "exercise_mode": {
+        "name": "Mode d'exercice",
+        "state": {
+          "unloaded": "À vide",
+          "unloaded_full_speed": "À vide, plein régime",
+          "loaded_full_speed": "En charge, plein régime",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "exercise_frequency": {
+        "name": "Fréquence des exercices",
+        "state": {
+          "weekly": "Chaque semaine",
+          "every_other_week": "Toutes les deux semaines",
+          "monthly": "Chaque mois"
+        }
+      }
+    },
+    "number": {
+      "exercise_duration": {
+        "name": "Durée de l'exercice"
+      },
+      "load_module_setting": {
+        "name": "Module de délestage {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "datetime": {
+      "next_exercise_start": {
+        "name": "Début du prochain exercice"
+      }
+    },
+    "switch": {
+      "notify_shutdowns": {
+        "name": "Notifications d'arrêt de sécurité"
+      },
+      "notify_warnings": {
+        "name": "Notifications d'avertissement"
+      },
+      "notify_running": {
+        "name": "Notifications de génératrice en marche"
+      },
+      "notify_notices": {
+        "name": "Avis généraux"
+      },
+      "notify_connection": {
+        "name": "Notifications de connexion"
+      },
+      "notify_maintenance": {
+        "name": "Rappels d'entretien"
+      },
+      "notify_long_running": {
+        "name": "Notifications de fonctionnement prolongé"
+      },
+      "notify_emails": {
+        "name": "Notifications par courriel"
+      },
+      "notify_push": {
+        "name": "Notifications push"
+      },
+      "notify_other": {
+        "name": "Notifications {name}"
+      },
+      "auto_firmware_update": {
+        "name": "Mises à jour automatiques du micrologiciel"
+      },
+      "load_module_setting": {
+        "name": "Module de délestage {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "text": {
+      "generator_name": {
+        "name": "Nom de la génératrice"
+      },
+      "load_module_setting": {
+        "name": "Module de délestage {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "Activité",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "none": "Aucun",
+              "status": "État",
+              "warning": "Avertissement",
+              "fault": "Défaut",
+              "shutdown": "Arrêt de sécurité",
+              "notice": "Avis",
+              "system_status_change": "Changement d'état du système"
+            }
+          }
+        }
+      },
+      "alerts": {
+        "name": "Alerte",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "raised": "Déclenchée",
+              "cleared": "Effacée"
+            }
+          }
+        }
+      },
+      "notifications": {
+        "name": "Notification",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "shutdown": "Arrêt de sécurité",
+              "warning": "Avertissement",
+              "maintenance_notice": "Avis d'entretien",
+              "long_running_notice": "Avis de fonctionnement prolongé",
+              "notice": "Avis",
+              "engine_started_notice": "Moteur démarré",
+              "engine_stopped_notice": "Moteur arrêté",
+              "exercise_started_notice": "Début de l'exercice",
+              "exercise_ended_notice": "Fin de l'exercice",
+              "online_notice": "Retour en ligne",
+              "offline_notice": "Passage hors ligne"
+            }
+          }
+        }
+      },
+      "power": {
+        "name": "Événement d'alimentation",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "utility_lost": "Perte du réseau électrique",
+              "utility_restored": "Retour du réseau électrique",
+              "generator_started": "Génératrice démarrée",
+              "generator_stopped": "Génératrice arrêtée",
+              "transferred_to_generator": "Charge transférée à la génératrice",
+              "transferred_to_utility": "Charge transférée au réseau"
+            }
+          }
+        }
+      }
+    },
+    "calendar": {
+      "schedule": {
+        "name": "Exercices et entretien",
+        "state_attributes": {
+          "message": {
+            "state": {
+              "exercise": "Exercice",
+              "last_exercise": "Dernier exercice",
+              "maintenance_due": "Entretien requis"
+            }
+          },
+          "description": {
+            "state": {
+              "last_exercise": "Dernier exercice signalé par la génératrice.",
+              "scheduled": "Prochain exercice planifié.",
+              "projected": "Projection d'après la planification des exercices.",
+              "maintenance_due": "Prochain entretien prévu de la génératrice."
+            }
+          }
+        }
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Micrologiciel du contrôleur",
+        "state_attributes": {
+          "release_summary": {
+            "state": {
+              "released": "Publié le {date}.",
+              "scheduled": "Installation planifiée le {date}.",
+              "auto_update_off": "Les mises à jour automatiques du micrologiciel sont désactivées pour cette génératrice."
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_generator": {
+      "message": "La génératrice {device_id} ne fait pas partie de ce compte."
+    },
+    "auth_failed": {
+      "message": "Rehlko a refusé les identifiants enregistrés. Une réauthentification a été demandée."
+    },
+    "api_error": {
+      "message": "Le service Rehlko a refusé la requête (HTTP {status}) : {message}"
+    },
+    "unavailable": {
+      "message": "Le service Rehlko est indisponible : {message}"
+    },
+    "offline": {
+      "message": "{name} est hors ligne. Les actions à distance sont indisponibles jusqu'à la reconnexion."
+    },
+    "e_stop": {
+      "message": "L'arrêt d'urgence est enclenché sur {name}. Le démarrage et l'exercice à distance sont indisponibles tant qu'il n'a pas été réarmé sur la génératrice."
+    },
+    "not_ready": {
+      "message": "{name} n'est pas en état de démarrer (état : {status}). Le démarrage d'un exercice est désactivé."
+    },
+    "no_scheduling": {
+      "message": "{name} : ce contrôleur ne prend pas en charge la planification à distance des exercices."
+    },
+    "empty_note": {
+      "message": "La note d'entretien est vide."
+    },
+    "empty_name": {
+      "message": "Le nom est vide."
+    },
+    "read_only": {
+      "message": "{name} est en lecture seule."
+    },
+    "device_not_found": {
+      "message": "L'appareil {device_id} est introuvable."
+    },
+    "not_a_generator": {
+      "message": "L'appareil {device_id} n'est pas une génératrice Rehlko."
+    },
+    "entry_not_loaded": {
+      "message": "Le compte de l'appareil {device_id} n'est pas chargé."
+    },
+    "no_serial": {
+      "message": "Le service n'a fourni aucun numéro de série pour ce contrôleur."
+    }
+  },
+  "services": {
+    "start_exercise": {
+      "name": "Démarrer un exercice",
+      "description": "Démarre un exercice immédiatement (l'équivalent de « Démarrer un exercice maintenant » dans l'application). La génératrice doit être en ligne, en mode Auto et prête à démarrer.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "Le mode d'exécution de l'exercice. Par défaut, celui de l'exercice planifié."
+        }
+      }
+    },
+    "stop_exercise": {
+      "name": "Arrêter l'exercice",
+      "description": "Arrête l'exercice en cours.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        }
+      }
+    },
+    "set_exercise_schedule": {
+      "name": "Définir la planification des exercices",
+      "description": "Crée ou modifie l'exercice récurrent. Les champs omis conservent leur valeur actuelle.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        },
+        "frequency": {
+          "name": "Fréquence",
+          "description": "Chaque semaine, toutes les deux semaines ou chaque mois."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "À vide, à vide à plein régime, en charge à plein régime ou EcoExercise."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Durée de fonctionnement en minutes."
+        },
+        "next_start": {
+          "name": "Prochain démarrage",
+          "description": "Date et heure de début du prochain exercice (uniquement sur les contrôleurs qui permettent de les choisir)."
+        }
+      }
+    },
+    "delete_exercise_schedule": {
+      "name": "Supprimer la planification des exercices",
+      "description": "Supprime l'exercice récurrent.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        }
+      }
+    },
+    "add_maintenance_note": {
+      "name": "Ajouter une note d'entretien",
+      "description": "Ajoute une entrée à l'historique d'entretien de la génératrice.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Ce qui a été fait."
+        }
+      }
+    },
+    "sync_controller_clock": {
+      "name": "Synchroniser l'horloge du contrôleur",
+      "description": "Règle l'horloge du contrôleur (à l'heure actuelle, sauf si une heure est indiquée).",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        },
+        "timestamp": {
+          "name": "Heure",
+          "description": "L'heure à régler. Par défaut, l'heure actuelle."
+        }
+      }
+    },
+    "set_peripheral_value": {
+      "name": "Définir une valeur du module de délestage ou du PIM",
+      "description": "Écrit un paramètre du module de délestage ou du PIM.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        },
+        "definition_id": {
+          "name": "ID de définition",
+          "description": "L'ID de définition du paramètre (un attribut de l'entité)."
+        },
+        "value": {
+          "name": "Valeur",
+          "description": "La valeur à écrire."
+        }
+      }
+    },
+    "rename_peripheral": {
+      "name": "Renommer un élément du module de délestage ou du PIM",
+      "description": "Modifie le nom d'affichage d'un paramètre du module de délestage ou du PIM.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        },
+        "definition_id": {
+          "name": "ID de définition",
+          "description": "L'ID de définition du paramètre."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Le nouveau nom."
+        }
+      }
+    },
+    "refresh": {
+      "name": "Actualiser",
+      "description": "Interroge tout immédiatement, y compris le journal d'activité et l'historique d'entretien.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "Uniquement le compte de cette génératrice. Tous les comptes si le champ est omis."
+        }
+      }
+    },
+    "get_activity_log": {
+      "name": "Obtenir le journal d'activité",
+      "description": "Renvoie le journal d'activité (événements) de la génératrice.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        },
+        "limit": {
+          "name": "Limite",
+          "description": "Nombre maximal d'entrées à renvoyer, les plus récentes en premier."
+        }
+      }
+    },
+    "get_alerts": {
+      "name": "Obtenir les alertes actives",
+      "description": "Renvoie les alertes actives de la génératrice.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        }
+      }
+    },
+    "get_maintenance_history": {
+      "name": "Obtenir l'historique d'entretien",
+      "description": "Renvoie les notes d'entretien et le programme d'entretien.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        }
+      }
+    },
+    "get_notifications": {
+      "name": "Obtenir les notifications",
+      "description": "Renvoie les notifications de l'application pour la génératrice.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        },
+        "limit": {
+          "name": "Limite",
+          "description": "Nombre maximal de notifications à renvoyer, les plus récentes en premier."
+        }
+      }
+    },
+    "get_generator_data": {
+      "name": "Obtenir les données de la génératrice",
+      "description": "Renvoie les données brutes de l'appareil et de ses détails, telles que le service les a envoyées.",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        }
+      }
+    },
+    "get_parameter_definitions": {
+      "name": "Obtenir les définitions des paramètres",
+      "description": "Renvoie le catalogue des paramètres du contrôleur (noms, types, plages, unités).",
+      "fields": {
+        "device_id": {
+          "name": "Génératrice",
+          "description": "La génératrice (ou son commutateur de transfert) sur laquelle agir."
+        },
+        "kind": {
+          "name": "Contrôleur",
+          "description": "Le contrôleur de la génératrice ou celui du commutateur de transfert."
+        }
+      }
+    }
+  }
+}

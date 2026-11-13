@@ -1,0 +1,1003 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sign in to Rehlko Energy Management",
+        "description": "Use the email and password you use in the Energy Mgmt. (formerly KOHLER Energy Management) app. The app credentials below identify the app to Rehlko's sign-in service; see the integration's documentation for where to find them.",
+        "data": {
+          "username": "Email",
+          "password": "Password"
+        },
+        "data_description": {
+          "username": "The email address of your Rehlko / Kohler Energy Management account.",
+          "password": "Stored in Home Assistant so the integration can sign in again when its session expires."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "App credentials",
+            "description": "The OAuth client ID, client secret and API key from the Energy Mgmt. app's configuration.",
+            "data": {
+              "client_id": "OAuth client ID",
+              "client_secret": "OAuth client secret",
+              "api_key": "API key"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID in the app's configuration file.",
+              "client_secret": "CLIENT_SECRET in the app's configuration file.",
+              "api_key": "API_KEY in the app's configuration file."
+            }
+          }
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in again",
+        "description": "Rehlko asked for the password for {username} again.",
+        "data": {
+          "password": "Password"
+        },
+        "data_description": {
+          "password": "Stored in Home Assistant so the integration can sign in again when its session expires."
+        }
+      },
+      "reconfigure": {
+        "title": "Update credentials",
+        "description": "Update the password or the app credentials for {username} (for example after an app update changed them).",
+        "data": {
+          "password": "Password"
+        },
+        "data_description": {
+          "password": "Stored in Home Assistant so the integration can sign in again when its session expires."
+        },
+        "sections": {
+          "app_credentials": {
+            "name": "App credentials",
+            "description": "The OAuth client ID, client secret and API key from the Energy Mgmt. app's configuration.",
+            "data": {
+              "client_id": "OAuth client ID",
+              "client_secret": "OAuth client secret",
+              "api_key": "API key"
+            },
+            "data_description": {
+              "client_id": "CLIENT_ID in the app's configuration file.",
+              "client_secret": "Leave empty to keep the stored value.",
+              "api_key": "Leave empty to keep the stored value."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The email or password was not accepted.",
+      "sign_in_denied": "Rehlko's sign-in service refused a password sign-in for this account. That happens when the account requires multi-factor authentication, which this integration cannot complete.",
+      "invalid_app_credentials": "The sign-in service rejected the app's client ID or client secret.",
+      "invalid_api_key": "Signed in, but the API rejected the request; check the API key.",
+      "cannot_connect": "Could not reach the Rehlko service.",
+      "no_generators": "Signed in, but this account has no generators.",
+      "unknown": "Unexpected error; see the logs."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "reauth_successful": "Signed in again.",
+      "reconfigure_successful": "Credentials updated.",
+      "wrong_account": "Those credentials belong to a different account."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Rehlko Energy Management options",
+        "data": {
+          "scan_interval": "Polling interval in standby",
+          "active_scan_interval": "Polling interval while running or during an outage",
+          "feed_interval": "Activity log, alerts and notifications interval",
+          "notification_limit": "Notifications to fetch per generator",
+          "sidebar_panel": "Show the Generator panel in the sidebar",
+          "extra_diagnostic_entities": "Create diagnostic entities for every other API field"
+        },
+        "data_description": {
+          "scan_interval": "How often to read the generator while it is idle.",
+          "active_scan_interval": "Used while the engine runs, during an exercise, or when the home is on generator power.",
+          "feed_interval": "These lists change rarely; a longer interval means fewer requests.",
+          "notification_limit": "The newest notifications are fetched first.",
+          "sidebar_panel": "The panel is visible to administrators only.",
+          "extra_diagnostic_entities": "They are created disabled, so nothing the service reports is hidden and nothing is recorded until you enable it on the device page."
+        }
+      }
+    }
+  },
+  "selector": {
+    "exercise_mode": {
+      "options": {
+        "unloaded": "Unloaded",
+        "unloaded_full_speed": "Unloaded, full speed",
+        "loaded_full_speed": "Loaded, full speed",
+        "eco_exercise": "EcoExercise"
+      }
+    },
+    "exercise_frequency": {
+      "options": {
+        "weekly": "Weekly",
+        "every_other_week": "Every other week",
+        "monthly": "Monthly"
+      }
+    },
+    "controller_kind": {
+      "options": {
+        "generator": "Generator",
+        "ats": "Transfer switch"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "utility_voltage": {
+        "name": "Utility voltage"
+      },
+      "generator_voltage": {
+        "name": "Generator voltage"
+      },
+      "generator_load": {
+        "name": "Generator load"
+      },
+      "generator_load_percent": {
+        "name": "Generator load (of rated)"
+      },
+      "energy_produced": {
+        "name": "Energy produced"
+      },
+      "set_output_voltage": {
+        "name": "Rated output voltage"
+      },
+      "power_source": {
+        "name": "Power source",
+        "state": {
+          "unknown": "Unknown",
+          "utility": "Utility",
+          "generator": "Generator"
+        }
+      },
+      "engine_speed": {
+        "name": "Engine speed"
+      },
+      "engine_frequency": {
+        "name": "Generator frequency"
+      },
+      "engine_oil_pressure": {
+        "name": "Oil pressure"
+      },
+      "engine_coolant_temperature": {
+        "name": "Coolant temperature"
+      },
+      "lube_oil_temperature": {
+        "name": "Lube oil temperature"
+      },
+      "engine_compartment_temperature": {
+        "name": "Engine compartment temperature"
+      },
+      "engine_state": {
+        "name": "Engine state",
+        "state": {
+          "off": "Off",
+          "crank_on": "Cranking",
+          "crank_pause": "Crank rest",
+          "idle": "Idle",
+          "running": "Running",
+          "cool_down": "Cooling down",
+          "stopping": "Stopping",
+          "shutdown": "Shutdown",
+          "performing_loaded_test": "Performing loaded test",
+          "performing_unloaded_test": "Performing unloaded test",
+          "performing_variable_speed_exercise": "Performing variable speed exercise",
+          "performing_loaded_exercise": "Performing loaded exercise",
+          "fuel_priming": "Fuel priming",
+          "ecm_powered": "ECM powered",
+          "fault_cool_down": "Fault cool-down",
+          "standby": "Standby",
+          "preheat": "Preheat",
+          "performing_unloaded_full_speed_exercise": "Performing unloaded full speed exercise",
+          "performing_full_speed_diagnostics": "Performing full speed diagnostics",
+          "unloading": "Unloading",
+          "stopped_by_generator_management": "Stopped by generator management",
+          "synchronizing": "Synchronizing",
+          "protective_relay_tripped_contactor": "Protective relay tripped",
+          "start_delay": "Start delay",
+          "stationary_regen": "Stationary regen",
+          "choke": "Choke",
+          "performing_eco_cycle": "Running EcoExercise"
+        }
+      },
+      "fuel_level": {
+        "name": "Fuel level"
+      },
+      "battery_voltage": {
+        "name": "Battery voltage"
+      },
+      "controller_temperature": {
+        "name": "Controller temperature"
+      },
+      "controller_clock": {
+        "name": "Controller clock"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "ready_to_run": "Ready to run",
+          "shutdown": "Shutdown",
+          "switch_state_off": "Switched off",
+          "running": "Running",
+          "running_exercise": "Exercising",
+          "offline": "Offline"
+        }
+      },
+      "switch_state": {
+        "name": "Mode switch",
+        "state": {
+          "off": "Off",
+          "auto": "Auto",
+          "manual": "Manual"
+        }
+      },
+      "shutdown_reason": {
+        "name": "Shutdown reason"
+      },
+      "alert_count": {
+        "name": "Active alerts"
+      },
+      "total_runtime": {
+        "name": "Total runtime"
+      },
+      "total_operation": {
+        "name": "Total operation"
+      },
+      "runtime_since_maintenance": {
+        "name": "Runtime since maintenance"
+      },
+      "last_run": {
+        "name": "Last run"
+      },
+      "last_maintenance": {
+        "name": "Last maintenance"
+      },
+      "next_maintenance": {
+        "name": "Next maintenance"
+      },
+      "maintenance_period": {
+        "name": "Maintenance interval"
+      },
+      "last_maintenance_note": {
+        "name": "Latest maintenance note"
+      },
+      "next_exercise": {
+        "name": "Next exercise"
+      },
+      "last_exercise_start": {
+        "name": "Last exercise started"
+      },
+      "last_exercise_end": {
+        "name": "Last exercise ended"
+      },
+      "exercise_running_mode": {
+        "name": "Exercise in progress",
+        "state": {
+          "none": "None",
+          "unloaded": "Unloaded",
+          "unloaded_full_speed": "Unloaded, full speed",
+          "loaded_full_speed": "Loaded, full speed",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "last_event": {
+        "name": "Last activity"
+      },
+      "last_notification": {
+        "name": "Last notification"
+      },
+      "weather_temperature": {
+        "name": "Outdoor temperature"
+      },
+      "weather_condition": {
+        "name": "Weather",
+        "state": {
+          "clear_sky": "Clear sky",
+          "few_clouds": "Few clouds",
+          "scattered_clouds": "Scattered clouds",
+          "broken_clouds": "Broken clouds",
+          "shower_rain": "Showers",
+          "rain": "Rain",
+          "thunderstorm": "Thunderstorm",
+          "snow": "Snow",
+          "mist": "Mist",
+          "unknown": "Unknown"
+        }
+      },
+      "model": {
+        "name": "Model"
+      },
+      "product": {
+        "name": "Controller product"
+      },
+      "controller_type": {
+        "name": "Controller type"
+      },
+      "firmware_version": {
+        "name": "Firmware version"
+      },
+      "current_firmware": {
+        "name": "Firmware build"
+      },
+      "fuel_type": {
+        "name": "Fuel type",
+        "state": {
+          "natural_gas": "Natural gas",
+          "liquid_propane": "Liquid propane (LP)",
+          "gasoline": "Gasoline",
+          "diesel": "Diesel",
+          "unknown_undefined": "Unknown"
+        }
+      },
+      "cooling_type": {
+        "name": "Cooling",
+        "state": {
+          "unknown": "Unknown",
+          "air": "Air",
+          "liquid": "Liquid"
+        }
+      },
+      "connection_type": {
+        "name": "Connection",
+        "state": {
+          "unknown": "Unknown",
+          "ethernet": "Ethernet",
+          "kohler_wifi": "Kohler Wi-Fi",
+          "other_wifi": "Other Wi-Fi",
+          "cellular": "Cellular",
+          "kohler_cell_kit": "Kohler cellular kit"
+        }
+      },
+      "device_ip_address": {
+        "name": "IP address"
+      },
+      "server_ip_address": {
+        "name": "Server IP address"
+      },
+      "mac_address": {
+        "name": "MAC address"
+      },
+      "last_connected": {
+        "name": "Last connected"
+      },
+      "status_updated": {
+        "name": "Status updated"
+      },
+      "parameters_updated": {
+        "name": "Parameters updated"
+      },
+      "uptime_percent": {
+        "name": "Connection uptime"
+      },
+      "remote_reset_counter": {
+        "name": "Remote reset countdown"
+      },
+      "wifi_strength": {
+        "name": "Wi-Fi signal",
+        "state": {
+          "weak": "Weak",
+          "moderate": "Moderate",
+          "strong": "Strong"
+        }
+      },
+      "cellular_strength": {
+        "name": "Cellular signal",
+        "state": {
+          "weak": "Weak",
+          "moderate": "Moderate",
+          "strong": "Strong"
+        }
+      },
+      "site_address": {
+        "name": "Site address"
+      },
+      "dealer": {
+        "name": "Dealer"
+      },
+      "service_agreement_status": {
+        "name": "Service agreement",
+        "state": {
+          "active": "Active",
+          "expired": "Expired",
+          "missing_data": "Missing data",
+          "none": "None"
+        }
+      },
+      "cellular_data_status": {
+        "name": "Cellular data",
+        "state": {
+          "active": "Active",
+          "near_data_limit": "Near data limit",
+          "reached_data_limit": "Data limit reached",
+          "unknown": "Unknown"
+        }
+      },
+      "cellular_data_used": {
+        "name": "Cellular data used"
+      },
+      "cellular_expiry": {
+        "name": "Cellular plan expires"
+      },
+      "cellular_installed": {
+        "name": "Cellular kit installed"
+      },
+      "cell_kit_payment_status": {
+        "name": "Cellular plan payment",
+        "state": {
+          "paid": "Paid",
+          "in_progress": "In progress",
+          "renewal_failed": "Renewal failed",
+          "unknown": "Unknown"
+        }
+      },
+      "cell_data_remaining": {
+        "name": "Cellular data remaining"
+      },
+      "scheduled_firmware_update": {
+        "name": "Scheduled firmware update"
+      },
+      "install_progress": {
+        "name": "Installation progress"
+      },
+      "ats_power_source": {
+        "name": "Transfer switch position",
+        "state": {
+          "unknown": "Unknown",
+          "utility": "Utility",
+          "generator": "Generator"
+        }
+      },
+      "ats_connection_type": {
+        "name": "Transfer switch link",
+        "state": {
+          "hardwired": "Hardwired",
+          "ism": "ISM radio"
+        }
+      },
+      "ats_signal_strength": {
+        "name": "Transfer switch signal",
+        "state": {
+          "weak": "Weak",
+          "moderate": "Moderate",
+          "strong": "Strong"
+        }
+      },
+      "load_module_parameter": {
+        "name": "Load module {name}"
+      },
+      "pim_parameter": {
+        "name": "PIM {name}"
+      },
+      "extra_field": {
+        "name": "{field}"
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "Cloud connection"
+      },
+      "utility_power": {
+        "name": "Utility power"
+      },
+      "on_generator_power": {
+        "name": "On generator power"
+      },
+      "running": {
+        "name": "Running"
+      },
+      "exercising": {
+        "name": "Exercising"
+      },
+      "ready_to_run": {
+        "name": "Ready to run"
+      },
+      "not_in_auto": {
+        "name": "Not in Auto"
+      },
+      "oil_pressure_problem": {
+        "name": "Oil pressure"
+      },
+      "maintenance_due": {
+        "name": "Maintenance due"
+      },
+      "active_alerts": {
+        "name": "Alerts"
+      },
+      "critical_fault": {
+        "name": "Critical fault"
+      },
+      "e_stop": {
+        "name": "Emergency stop"
+      },
+      "exercise_scheduled": {
+        "name": "Exercise scheduled"
+      },
+      "service_agreement": {
+        "name": "Service agreement"
+      },
+      "cellular_kit_online": {
+        "name": "Cellular kit"
+      },
+      "wifi_connected": {
+        "name": "Wi-Fi"
+      },
+      "cellular_connected": {
+        "name": "Cellular"
+      },
+      "load_module_connected": {
+        "name": "Load module"
+      },
+      "pim_connected": {
+        "name": "PIM"
+      },
+      "firmware_update_available": {
+        "name": "Firmware update available"
+      },
+      "extra_flag": {
+        "name": "{field}"
+      }
+    },
+    "button": {
+      "start_exercise": {
+        "name": "Start exercise"
+      },
+      "stop_exercise": {
+        "name": "Stop exercise"
+      },
+      "sync_controller_clock": {
+        "name": "Sync controller clock"
+      },
+      "refresh": {
+        "name": "Refresh"
+      }
+    },
+    "select": {
+      "exercise_mode": {
+        "name": "Exercise mode",
+        "state": {
+          "unloaded": "Unloaded",
+          "unloaded_full_speed": "Unloaded, full speed",
+          "loaded_full_speed": "Loaded, full speed",
+          "eco_exercise": "EcoExercise"
+        }
+      },
+      "exercise_frequency": {
+        "name": "Exercise frequency",
+        "state": {
+          "weekly": "Weekly",
+          "every_other_week": "Every other week",
+          "monthly": "Monthly"
+        }
+      }
+    },
+    "number": {
+      "exercise_duration": {
+        "name": "Exercise duration"
+      },
+      "load_module_setting": {
+        "name": "Load module {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "datetime": {
+      "next_exercise_start": {
+        "name": "Next exercise start"
+      }
+    },
+    "switch": {
+      "notify_shutdowns": {
+        "name": "Shutdown notifications"
+      },
+      "notify_warnings": {
+        "name": "Warning notifications"
+      },
+      "notify_running": {
+        "name": "Generator running notifications"
+      },
+      "notify_notices": {
+        "name": "General notices"
+      },
+      "notify_connection": {
+        "name": "Connection notifications"
+      },
+      "notify_maintenance": {
+        "name": "Maintenance reminders"
+      },
+      "notify_long_running": {
+        "name": "Long-running notifications"
+      },
+      "notify_emails": {
+        "name": "Email notifications"
+      },
+      "notify_push": {
+        "name": "Push notifications"
+      },
+      "notify_other": {
+        "name": "{name} notifications"
+      },
+      "auto_firmware_update": {
+        "name": "Automatic firmware updates"
+      },
+      "load_module_setting": {
+        "name": "Load module {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "text": {
+      "generator_name": {
+        "name": "Generator name"
+      },
+      "load_module_setting": {
+        "name": "Load module {name}"
+      },
+      "pim_setting": {
+        "name": "PIM {name}"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "Activity",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "none": "None",
+              "status": "Status",
+              "warning": "Warning",
+              "fault": "Fault",
+              "shutdown": "Shutdown",
+              "notice": "Notice",
+              "system_status_change": "System status change"
+            }
+          }
+        }
+      },
+      "alerts": {
+        "name": "Alert",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "raised": "Raised",
+              "cleared": "Cleared"
+            }
+          }
+        }
+      },
+      "notifications": {
+        "name": "Notification",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "shutdown": "Shutdown",
+              "warning": "Warning",
+              "maintenance_notice": "Maintenance notice",
+              "long_running_notice": "Long-running notice",
+              "notice": "Notice",
+              "engine_started_notice": "Engine started",
+              "engine_stopped_notice": "Engine stopped",
+              "exercise_started_notice": "Exercise started",
+              "exercise_ended_notice": "Exercise ended",
+              "online_notice": "Back online",
+              "offline_notice": "Went offline"
+            }
+          }
+        }
+      },
+      "power": {
+        "name": "Power event",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "utility_lost": "Utility power lost",
+              "utility_restored": "Utility power restored",
+              "generator_started": "Generator started",
+              "generator_stopped": "Generator stopped",
+              "transferred_to_generator": "Load transferred to generator",
+              "transferred_to_utility": "Load transferred to utility"
+            }
+          }
+        }
+      }
+    },
+    "calendar": {
+      "schedule": {
+        "name": "Exercise and maintenance",
+        "state_attributes": {
+          "message": {
+            "state": {
+              "exercise": "Exercise",
+              "last_exercise": "Last exercise",
+              "maintenance_due": "Maintenance due"
+            }
+          },
+          "description": {
+            "state": {
+              "last_exercise": "Most recent exercise run reported by the generator.",
+              "scheduled": "Next scheduled exercise.",
+              "projected": "Projected from the exercise schedule.",
+              "maintenance_due": "Next scheduled maintenance for the generator."
+            }
+          }
+        }
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Controller firmware",
+        "state_attributes": {
+          "release_summary": {
+            "state": {
+              "released": "Released {date}.",
+              "scheduled": "Scheduled to install {date}.",
+              "auto_update_off": "Automatic firmware updates are off for this generator."
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_generator": {
+      "message": "Generator {device_id} is not part of this account."
+    },
+    "auth_failed": {
+      "message": "Rehlko rejected the stored credentials; re-authentication has been requested."
+    },
+    "api_error": {
+      "message": "The Rehlko service refused the request (HTTP {status}): {message}"
+    },
+    "unavailable": {
+      "message": "The Rehlko service is unavailable: {message}"
+    },
+    "offline": {
+      "message": "{name} is offline; remote actions are unavailable until it reconnects."
+    },
+    "e_stop": {
+      "message": "The emergency stop is engaged on {name}. Remote start and remote exercise are unavailable until it is reset at the generator."
+    },
+    "not_ready": {
+      "message": "{name} is not ready to run (status: {status}); starting an exercise is disabled."
+    },
+    "no_scheduling": {
+      "message": "Remote exercise scheduling is not available for {name}'s controller."
+    },
+    "empty_note": {
+      "message": "The maintenance note is empty."
+    },
+    "empty_name": {
+      "message": "The name is empty."
+    },
+    "read_only": {
+      "message": "{name} is read-only."
+    },
+    "device_not_found": {
+      "message": "Device {device_id} was not found."
+    },
+    "not_a_generator": {
+      "message": "Device {device_id} is not a Rehlko generator."
+    },
+    "entry_not_loaded": {
+      "message": "The account for device {device_id} is not loaded."
+    },
+    "no_serial": {
+      "message": "The service did not report a serial number for that controller."
+    }
+  },
+  "services": {
+    "start_exercise": {
+      "name": "Start exercise",
+      "description": "Start an exercise run now (the app's \"Start an exercise now\"). The generator must be online, in Auto and ready to run.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "How to run it; defaults to the scheduled exercise's mode."
+        }
+      }
+    },
+    "stop_exercise": {
+      "name": "Stop exercise",
+      "description": "Stop the exercise that is running.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        }
+      }
+    },
+    "set_exercise_schedule": {
+      "name": "Set exercise schedule",
+      "description": "Create or change the recurring exercise. Fields left out keep their current value.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        },
+        "frequency": {
+          "name": "Frequency",
+          "description": "Weekly, every other week, or monthly."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "Unloaded, unloaded full speed, loaded full speed, or EcoExercise."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Run time in minutes."
+        },
+        "next_start": {
+          "name": "Next start",
+          "description": "When the next exercise starts (only on controllers that allow choosing it)."
+        }
+      }
+    },
+    "delete_exercise_schedule": {
+      "name": "Delete exercise schedule",
+      "description": "Remove the recurring exercise.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        }
+      }
+    },
+    "add_maintenance_note": {
+      "name": "Add maintenance note",
+      "description": "Add an entry to the generator's maintenance history.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        },
+        "note": {
+          "name": "Note",
+          "description": "What was done."
+        }
+      }
+    },
+    "sync_controller_clock": {
+      "name": "Sync controller clock",
+      "description": "Set the controller's clock (to now, unless a time is given).",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        },
+        "timestamp": {
+          "name": "Time",
+          "description": "The time to set; defaults to now."
+        }
+      }
+    },
+    "set_peripheral_value": {
+      "name": "Set load module / PIM value",
+      "description": "Write one load-module or PIM parameter.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        },
+        "definition_id": {
+          "name": "Definition ID",
+          "description": "The parameter's definition ID (an entity attribute)."
+        },
+        "value": {
+          "name": "Value",
+          "description": "The value to write."
+        }
+      }
+    },
+    "rename_peripheral": {
+      "name": "Rename load / PIM item",
+      "description": "Change a load-module or PIM parameter's display name.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        },
+        "definition_id": {
+          "name": "Definition ID",
+          "description": "The parameter's definition ID."
+        },
+        "name": {
+          "name": "Name",
+          "description": "The new name."
+        }
+      }
+    },
+    "refresh": {
+      "name": "Refresh",
+      "description": "Poll everything now, including the activity log and maintenance history.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "Only this generator's account; all accounts if omitted."
+        }
+      }
+    },
+    "get_activity_log": {
+      "name": "Get activity log",
+      "description": "Return the generator's activity (event) log.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "The most entries to return, newest first."
+        }
+      }
+    },
+    "get_alerts": {
+      "name": "Get active alerts",
+      "description": "Return the generator's active alerts.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        }
+      }
+    },
+    "get_maintenance_history": {
+      "name": "Get maintenance history",
+      "description": "Return the maintenance notes and schedule.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        }
+      }
+    },
+    "get_notifications": {
+      "name": "Get notifications",
+      "description": "Return the app notifications for the generator.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "The most notifications to return, newest first."
+        }
+      }
+    },
+    "get_generator_data": {
+      "name": "Get generator data",
+      "description": "Return the raw device and details payloads as the service sent them.",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        }
+      }
+    },
+    "get_parameter_definitions": {
+      "name": "Get parameter definitions",
+      "description": "Return the controller's parameter catalogue (names, types, ranges, units).",
+      "fields": {
+        "device_id": {
+          "name": "Generator",
+          "description": "The generator (or its transfer switch) to act on."
+        },
+        "kind": {
+          "name": "Controller",
+          "description": "The generator's controller or the transfer switch's."
+        }
+      }
+    }
+  }
+}

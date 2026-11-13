@@ -1,0 +1,7 @@
+# Test dependencies. `pytest-homeassistant-custom-component` pins a matching Home Assistant.
+pytest>=8.0
+pytest-cov>=5.0
+pytest-homeassistant-custom-component>=0.13
+
+# The actual frontend assets are used by lifecycle and custom-panel tests.
+home-assistant-frontend>=20260128.6
