@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+## [1.00] - 2026-11-13
+
 ### Added
 
 - Translations for German, Spanish, French, Italian, Japanese, Dutch, Polish, Brazilian
