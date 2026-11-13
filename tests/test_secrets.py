@@ -144,5 +144,10 @@ async def test_diagnostics_snapshot_and_logs_hold_no_credentials(
 
     # The panel is administrators-only, but it has no use for credentials at all.
     assert_no_secrets(json.dumps(build_snapshot(hass), default=str))
-    # The log names the integration, not the account.
-    assert_no_secrets(caplog.text, also=(EMAIL,))
+    # Nothing logs a credential. The integration's own records do not name the account
+    # either. Home Assistant's can: it names the setup task after the entry's title, and
+    # asyncio prints that name when a step of setup is slow, as on a busy CI runner.
+    assert_no_secrets(caplog.text)
+    ours = [r for r in caplog.records if r.name.startswith("custom_components.")]
+    assert ours
+    assert_no_secrets("\n".join(caplog.handler.format(r) for r in ours), also=(EMAIL,))
