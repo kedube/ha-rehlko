@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+## [1.01] - 2026-11-13
+
 ### Fixed
 
 - The **IP address** diagnostic sensor and the panel's Diagnostics tab show the controller's
