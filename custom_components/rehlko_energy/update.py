@@ -45,12 +45,8 @@ class FirmwareUpdate(RehlkoEntity, UpdateEntity):
         await super().async_added_to_hass()
         self._texts = await async_entity_texts(self.hass)
 
-    def _text(self, key: str, **placeholders: str) -> str:
-        template = text(self._texts, FIRMWARE_SUMMARY_PATH, FIRMWARE_SUMMARY, key)
-        try:
-            return template.format(**placeholders)
-        except (KeyError, IndexError, ValueError):
-            return FIRMWARE_SUMMARY[key].format(**placeholders)
+    def _text(self, key: str) -> str:
+        return text(self._texts, FIRMWARE_SUMMARY_PATH, FIRMWARE_SUMMARY, key)
 
     @property
     def installed_version(self) -> str | None:
@@ -79,12 +75,12 @@ class FirmwareUpdate(RehlkoEntity, UpdateEntity):
             return None
         parts = []
         if update.get("releaseDate"):
-            parts.append(self._text("released", date=str(update["releaseDate"])[:10]))
+            parts.append(f"{self._text('released')}: {str(update['releaseDate'])[:10]}.")
         scheduled = gen.details.get("scheduledFirmwareUpdateTimestamp") if gen else None
         if scheduled:
             when = parse_timestamp(scheduled, dt_util.get_default_time_zone())
             shown = dt_util.as_local(when).strftime("%Y-%m-%d %H:%M") if when else str(scheduled)
-            parts.append(self._text("scheduled", date=shown))
+            parts.append(f"{self._text('scheduled')}: {shown}.")
         if gen and gen.details.get("autoFirmwareUpdateEnabled") is False:
             parts.append(self._text("auto_update_off"))
         return " ".join(parts)[:255] or None

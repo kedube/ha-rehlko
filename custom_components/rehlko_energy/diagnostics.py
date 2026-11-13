@@ -9,6 +9,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 
 from . import RehlkoConfigEntry
+from .app_credentials import stored_app_credentials
 from .const import (
     CONF_ACCOUNT_ID,
     CONF_API_KEY,
@@ -119,6 +120,9 @@ async def async_get_config_entry_diagnostics(
         },
         "api": {
             "base_url": coordinator.client.base_url,
+            # Whether the entry signs in with app credentials entered by hand ("stored") or
+            # with the ones written into the integration ("built_in").
+            "app_credentials": "stored" if stored_app_credentials(entry.data) else "built_in",
             "token_claims": async_redact_data(
                 {
                     k: v

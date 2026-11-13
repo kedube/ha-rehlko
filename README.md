@@ -61,10 +61,11 @@ control, event and alert notifications, activity logs, maintenance history, and 
 - Home Assistant **2026.2** or newer.
 - A Rehlko / Kohler Energy Management account (the email and password you use in the app) with
   at least one generator.
-- The app's **OAuth client id, client secret and API key**. These identify the app (not your
-  account) and are the same for every install. The setup form asks for them; see
-  [docs/API.md](docs/API.md#authentication) for how to read them from a copy of the app
-  installed on a Mac or extracted from the Android package.
+
+Nothing has to be copied out of the app. Its own OAuth client and API key, which identify the
+app (not your account) and are the same for every install, are built into the integration.
+Setup asks for them only if Rehlko stops accepting those;
+[docs/API.md](docs/API.md#authentication) says where to find the current ones then.
 
 ## Install
 
@@ -104,9 +105,8 @@ Copy the `custom_components/rehlko_energy/` folder from this repository into the
 ## Set up
 
 **Settings → Devices & Services → Add Integration → Rehlko Energy Management.** Enter your
-account email and password, and expand **App credentials** to paste the client id, client secret
-and API key. The integration signs in, finds your generators, and creates a device for each one
-(and a sub‑device for its automatic transfer switch, when present).
+account email and password. The integration signs in, finds your generators, and creates a
+device for each one (and a sub‑device for its automatic transfer switch, when present).
 
 The **Generator** panel appears in the sidebar automatically for Home Assistant administrators;
 you can turn it off per account in the integration's options. Its route is `/rehlko-energy`

@@ -6,6 +6,7 @@ from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import translation
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity import Entity
@@ -20,6 +21,10 @@ if TYPE_CHECKING:
     from . import RehlkoConfigEntry
 
 APP_URL = "https://apps.apple.com/us/app/kohler-energy-management/id1627740645"
+# How a device names its parent. Newer Home Assistant wants the parent's ID in the device
+# registry (`via_device_id`) and deprecates the parent's identifier (`via_device`), which is all
+# that older versions accept.
+VIA_BY_REGISTRY_ID = "via_device_id" in DeviceInfo.__annotations__
 
 
 async def async_entity_texts(hass: HomeAssistant) -> dict[str, str]:
@@ -77,19 +82,34 @@ def generator_device_info(gen: GeneratorData) -> DeviceInfo:
     )
 
 
-def ats_device_info(gen: GeneratorData) -> DeviceInfo | None:
+def ats_device_info(
+    gen: GeneratorData, coordinator: RehlkoCoordinator | None = None
+) -> DeviceInfo | None:
+    """The transfer switch's device, or None if the generator reports no switch.
+
+    With a coordinator, the switch is linked to its generator's device, which is registered
+    first if no entity of the generator has done so yet.
+    """
     ats = gen.ats
     serial = ats.get("serialNumber")
     if not ats or not serial:
         return None
-    return DeviceInfo(
+    info = DeviceInfo(
         identifiers={(DOMAIN, f"{gen.device_id}:ats")},
         name=ats.get("displayName") or f"{gen.name} transfer switch",
         manufacturer=MANUFACTURER,
         model=ats.get("modelNo") or "Automatic transfer switch",
         serial_number=serial,
-        via_device=(DOMAIN, str(gen.device_id)),
     )
+    if coordinator is not None:
+        parent = dr.async_get(coordinator.hass).async_get_or_create(
+            config_entry_id=coordinator.config_entry.entry_id, **generator_device_info(gen)
+        )
+        if VIA_BY_REGISTRY_ID:
+            info["via_device_id"] = parent.id
+        else:
+            info["via_device"] = (DOMAIN, str(gen.device_id))
+    return info
 
 
 def account_device_info(coordinator: RehlkoCoordinator) -> DeviceInfo:

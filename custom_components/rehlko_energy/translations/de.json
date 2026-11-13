@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Bei Rehlko Energy Management anmelden",
-        "description": "Verwende die E-Mail-Adresse und das Passwort, die du in der App Energy Mgmt. (früher KOHLER Energy Management) nutzt. Die App-Zugangsdaten unten weisen die App gegenüber dem Anmeldedienst von Rehlko aus; wo du sie findest, steht in der Dokumentation der Integration.",
+        "description": "Verwende die E-Mail-Adresse und das Passwort, die du in der App Energy Mgmt. (früher KOHLER Energy Management) nutzt.",
         "data": {
           "username": "E-Mail",
           "password": "Passwort"
@@ -11,22 +11,20 @@
         "data_description": {
           "username": "Die E-Mail-Adresse deines Kontos bei Rehlko / Kohler Energy Management.",
           "password": "Wird in Home Assistant gespeichert, damit sich die Integration erneut anmelden kann, wenn ihre Sitzung abläuft."
+        }
+      },
+      "app_credentials": {
+        "title": "App-Zugangsdaten",
+        "description": "Der Dienst von Rehlko hat die in diese Integration eingebauten App-Zugangsdaten nicht akzeptiert, gib daher hier die aktuellen der App ein. Sie weisen die App aus, nicht dein Konto; wo du sie findest, steht in der Dokumentation der Integration.",
+        "data": {
+          "client_id": "OAuth-Client-ID",
+          "client_secret": "OAuth-Client-Geheimnis",
+          "api_key": "API-Schlüssel"
         },
-        "sections": {
-          "app_credentials": {
-            "name": "App-Zugangsdaten",
-            "description": "Die OAuth-Client-ID, das Client-Geheimnis und der API-Schlüssel aus der Konfiguration der App Energy Mgmt.",
-            "data": {
-              "client_id": "OAuth-Client-ID",
-              "client_secret": "OAuth-Client-Geheimnis",
-              "api_key": "API-Schlüssel"
-            },
-            "data_description": {
-              "client_id": "CLIENT_ID in der Konfigurationsdatei der App.",
-              "client_secret": "CLIENT_SECRET in der Konfigurationsdatei der App.",
-              "api_key": "API_KEY in der Konfigurationsdatei der App."
-            }
-          }
+        "data_description": {
+          "client_id": "CLIENT_ID in der Konfigurationsdatei der App.",
+          "client_secret": "CLIENT_SECRET in der Konfigurationsdatei der App.",
+          "api_key": "API_KEY in der Konfigurationsdatei der App."
         }
       },
       "reauth_confirm": {
@@ -51,7 +49,7 @@
         "sections": {
           "app_credentials": {
             "name": "App-Zugangsdaten",
-            "description": "Die OAuth-Client-ID, das Client-Geheimnis und der API-Schlüssel aus der Konfiguration der App Energy Mgmt.",
+            "description": "Nur nötig, wenn die in die Integration eingebauten App-Zugangsdaten nicht mehr funktionieren. Lass alle drei Felder leer, um die eingebauten zu verwenden.",
             "data": {
               "client_id": "OAuth-Client-ID",
               "client_secret": "OAuth-Client-Geheimnis",
@@ -70,6 +68,7 @@
       "invalid_auth": "Die E-Mail-Adresse oder das Passwort wurde nicht akzeptiert.",
       "sign_in_denied": "Der Anmeldedienst von Rehlko hat die Anmeldung mit Passwort für dieses Konto abgelehnt. Das passiert, wenn das Konto eine Multi-Faktor-Authentifizierung verlangt, die diese Integration nicht durchführen kann.",
       "invalid_app_credentials": "Der Anmeldedienst hat die Client-ID oder das Client-Geheimnis der App abgelehnt.",
+      "incomplete_app_credentials": "Gib alle drei App-Zugangsdaten ein oder lass alle drei leer, um die eingebauten zu verwenden.",
       "invalid_api_key": "Anmeldung erfolgreich, aber die API hat die Anfrage abgelehnt; prüfe den API-Schlüssel.",
       "cannot_connect": "Der Rehlko-Dienst konnte nicht erreicht werden.",
       "no_generators": "Anmeldung erfolgreich, aber dieses Konto enthält keine Generatoren.",
@@ -736,8 +735,8 @@
         "state_attributes": {
           "release_summary": {
             "state": {
-              "released": "Veröffentlicht am {date}.",
-              "scheduled": "Installation geplant für {date}.",
+              "released": "Veröffentlicht",
+              "scheduled": "Geplante Installation",
               "auto_update_off": "Automatische Firmware-Updates sind für diesen Generator deaktiviert."
             }
           }

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Inloggen bij Rehlko Energy Management",
-        "description": "Gebruik het e-mailadres en wachtwoord waarmee je inlogt in de app Energy Mgmt. (voorheen KOHLER Energy Management). Met de app-inloggegevens hieronder identificeert de app zich bij de inlogdienst van Rehlko; in de documentatie van de integratie staat waar je ze kunt vinden.",
+        "description": "Gebruik het e-mailadres en wachtwoord waarmee je inlogt in de app Energy Mgmt. (voorheen KOHLER Energy Management).",
         "data": {
           "username": "E-mail",
           "password": "Wachtwoord"
@@ -11,22 +11,20 @@
         "data_description": {
           "username": "Het e-mailadres van je Rehlko / Kohler Energy Management-account.",
           "password": "Wordt opgeslagen in Home Assistant, zodat de integratie opnieuw kan inloggen wanneer de sessie verloopt."
+        }
+      },
+      "app_credentials": {
+        "title": "App-inloggegevens",
+        "description": "De dienst van Rehlko heeft de in deze integratie ingebouwde app-inloggegevens niet geaccepteerd, dus vul hier de huidige gegevens van de app in. Ze identificeren de app, niet je account; in de documentatie van de integratie staat waar je ze kunt vinden.",
+        "data": {
+          "client_id": "OAuth-client-ID",
+          "client_secret": "OAuth-clientgeheim",
+          "api_key": "API-sleutel"
         },
-        "sections": {
-          "app_credentials": {
-            "name": "App-inloggegevens",
-            "description": "De OAuth-client-ID, het clientgeheim en de API-sleutel uit de configuratie van de app Energy Mgmt.",
-            "data": {
-              "client_id": "OAuth-client-ID",
-              "client_secret": "OAuth-clientgeheim",
-              "api_key": "API-sleutel"
-            },
-            "data_description": {
-              "client_id": "CLIENT_ID in het configuratiebestand van de app.",
-              "client_secret": "CLIENT_SECRET in het configuratiebestand van de app.",
-              "api_key": "API_KEY in het configuratiebestand van de app."
-            }
-          }
+        "data_description": {
+          "client_id": "CLIENT_ID in het configuratiebestand van de app.",
+          "client_secret": "CLIENT_SECRET in het configuratiebestand van de app.",
+          "api_key": "API_KEY in het configuratiebestand van de app."
         }
       },
       "reauth_confirm": {
@@ -51,7 +49,7 @@
         "sections": {
           "app_credentials": {
             "name": "App-inloggegevens",
-            "description": "De OAuth-client-ID, het clientgeheim en de API-sleutel uit de configuratie van de app Energy Mgmt.",
+            "description": "Alleen nodig als de in de integratie ingebouwde app-inloggegevens niet meer werken. Laat alle drie de velden leeg om de ingebouwde gegevens te gebruiken.",
             "data": {
               "client_id": "OAuth-client-ID",
               "client_secret": "OAuth-clientgeheim",
@@ -70,6 +68,7 @@
       "invalid_auth": "Het e-mailadres of wachtwoord is niet geaccepteerd.",
       "sign_in_denied": "De aanmeldservice van Rehlko heeft het inloggen met een wachtwoord voor dit account geweigerd. Dat gebeurt wanneer het account meervoudige verificatie vereist, die deze integratie niet kan uitvoeren.",
       "invalid_app_credentials": "De inlogdienst heeft de client-ID of het clientgeheim van de app geweigerd.",
+      "incomplete_app_credentials": "Vul alle drie de app-inloggegevens in, of laat ze alle drie leeg om de ingebouwde gegevens te gebruiken.",
       "invalid_api_key": "Ingelogd, maar de API heeft het verzoek geweigerd; controleer de API-sleutel.",
       "cannot_connect": "Kan de Rehlko-dienst niet bereiken.",
       "no_generators": "Ingelogd, maar dit account heeft geen generatoren.",
@@ -736,8 +735,8 @@
         "state_attributes": {
           "release_summary": {
             "state": {
-              "released": "Uitgebracht op {date}.",
-              "scheduled": "Installatie gepland op {date}.",
+              "released": "Uitgebracht",
+              "scheduled": "Geplande installatie",
               "auto_update_off": "Automatische firmware-updates staan uit voor deze generator."
             }
           }

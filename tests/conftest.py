@@ -7,8 +7,51 @@ tests also use the Home Assistant test harness.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+
+@pytest.fixture
+def client():
+    """The cloud client, answering with one home, one generator and empty feeds."""
+    from .test_entities import SAMPLE_DETAILS, SAMPLE_DEVICE
+
+    api = MagicMock()
+    for name, value in {
+        "get_homes": [{"id": 1, "devices": [SAMPLE_DEVICE]}],
+        "get_device": SAMPLE_DETAILS,
+        "get_events": [],
+        "get_alerts": [],
+        "get_notifications": [],
+        "get_maintenance_notes": [],
+        "get_cell_plan": {},
+        "get_me": {"id": "owner"},
+        "get_notification_settings": {"sendShutdowns": True, "sendWarnings": True},
+    }.items():
+        setattr(api, name, AsyncMock(return_value=deepcopy(value)))
+    return api
+
+
+@pytest.fixture(autouse=True)
+def builtin_app(request):
+    """Stands in for the app credentials written into the integration.
+
+    Every test gets it, so none of them signs in with, compares or prints the real ones. The
+    one test that checks the real set is there asks for it with `real_app_credentials`.
+    """
+    from custom_components.rehlko_energy import app_credentials
+    from custom_components.rehlko_energy.api import AppCredentials
+
+    if request.node.get_closest_marker("real_app_credentials"):
+        yield app_credentials.BUILTIN
+        return
+    stand_in = AppCredentials("builtin-client", "builtin-secret", "builtin-key")
+    with patch("custom_components.rehlko_energy.app_credentials.BUILTIN", stand_in):
+        yield stand_in
 
 
 @dataclass

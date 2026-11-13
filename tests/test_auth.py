@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import time
 
 import pytest
@@ -32,8 +33,10 @@ async def test_password_grant_sends_basic_auth_and_form() -> None:
     token = await auth.async_get_access_token()
     assert token
     call = session.last("POST", "/token")
-    assert call.kwargs["auth"].login == "client-id"
-    assert call.kwargs["auth"].password == "client-secret"
+    # The app's credentials go in an HTTP Basic header, as Okta's `client_secret_basic` expects.
+    scheme, _, encoded = call.kwargs["headers"]["Authorization"].partition(" ")
+    assert scheme == "Basic"
+    assert base64.b64decode(encoded).decode() == "client-id:client-secret"
     assert call.kwargs["data"]["grant_type"] == "password"
     assert call.kwargs["data"]["username"] == "owner@example.com"
     assert auth.refresh_token == "refresh-abc"

@@ -58,7 +58,7 @@ class TokenSet:
 
 @dataclass(frozen=True, slots=True)
 class AppCredentials:
-    """The app's OAuth client and API-gateway identifiers, supplied by the user."""
+    """The app's OAuth client and API-gateway identifiers (see `app_credentials.py`)."""
 
     client_id: str
     client_secret: str = field(repr=False)
@@ -180,13 +180,14 @@ class OktaAuth:
         )
 
     async def _async_token_request(self, form: dict[str, str]) -> None:
-        auth = aiohttp.BasicAuth(self._app.client_id, self._app.client_secret)
+        # HTTP Basic, written out: aiohttp is retiring its `BasicAuth` helper.
+        credentials = f"{self._app.client_id}:{self._app.client_secret}".encode()
+        basic = base64.b64encode(credentials).decode("ascii")
         try:
             async with self._session.post(
                 self._token_url,
                 data=form,
-                auth=auth,
-                headers={"Accept": "application/json"},
+                headers={"Accept": "application/json", "Authorization": f"Basic {basic}"},
                 timeout=REQUEST_TIMEOUT,
                 allow_redirects=False,
             ) as resp:

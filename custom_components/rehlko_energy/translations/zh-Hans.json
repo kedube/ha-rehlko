@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "登录 Rehlko Energy Management",
-        "description": "请使用您在 Energy Mgmt.（原 KOHLER Energy Management）应用中使用的电子邮箱和密码。下方的应用凭据用于向 Rehlko 的登录服务标识该应用；获取方法请参阅本集成的文档。",
+        "description": "请使用您在 Energy Mgmt.（原 KOHLER Energy Management）应用中使用的电子邮箱和密码。",
         "data": {
           "username": "电子邮箱",
           "password": "密码"
@@ -11,22 +11,20 @@
         "data_description": {
           "username": "您的 Rehlko / Kohler Energy Management 账户的电子邮箱地址。",
           "password": "保存在 Home Assistant 中，以便集成在会话过期后重新登录。"
+        }
+      },
+      "app_credentials": {
+        "title": "应用凭据",
+        "description": "Rehlko 的服务未接受本集成内置的应用凭据，请在此处输入该应用当前的凭据。这些凭据标识的是该应用，而不是您的账户；获取方法请参阅本集成的文档。",
+        "data": {
+          "client_id": "OAuth 客户端 ID",
+          "client_secret": "OAuth 客户端密钥",
+          "api_key": "API 密钥"
         },
-        "sections": {
-          "app_credentials": {
-            "name": "应用凭据",
-            "description": "来自 Energy Mgmt. 应用配置的 OAuth 客户端 ID、客户端密钥和 API 密钥。",
-            "data": {
-              "client_id": "OAuth 客户端 ID",
-              "client_secret": "OAuth 客户端密钥",
-              "api_key": "API 密钥"
-            },
-            "data_description": {
-              "client_id": "应用配置文件中的 CLIENT_ID。",
-              "client_secret": "应用配置文件中的 CLIENT_SECRET。",
-              "api_key": "应用配置文件中的 API_KEY。"
-            }
-          }
+        "data_description": {
+          "client_id": "应用配置文件中的 CLIENT_ID。",
+          "client_secret": "应用配置文件中的 CLIENT_SECRET。",
+          "api_key": "应用配置文件中的 API_KEY。"
         }
       },
       "reauth_confirm": {
@@ -51,7 +49,7 @@
         "sections": {
           "app_credentials": {
             "name": "应用凭据",
-            "description": "来自 Energy Mgmt. 应用配置的 OAuth 客户端 ID、客户端密钥和 API 密钥。",
+            "description": "仅当本集成内置的应用凭据失效时才需要填写。三个字段全部留空即可使用内置的凭据。",
             "data": {
               "client_id": "OAuth 客户端 ID",
               "client_secret": "OAuth 客户端密钥",
@@ -70,6 +68,7 @@
       "invalid_auth": "电子邮箱或密码不正确。",
       "sign_in_denied": "Rehlko 的登录服务拒绝了此账户的密码登录。当账户要求多重身份验证时会出现这种情况，而本集成无法完成该验证。",
       "invalid_app_credentials": "登录服务拒绝了应用的客户端 ID 或客户端密钥。",
+      "incomplete_app_credentials": "请填写全部三项应用凭据，或将三项全部留空以使用内置的凭据。",
       "invalid_api_key": "已登录，但 API 拒绝了请求；请检查 API 密钥。",
       "cannot_connect": "无法连接到 Rehlko 服务。",
       "no_generators": "已登录，但此账户下没有发电机。",
@@ -736,8 +735,8 @@
         "state_attributes": {
           "release_summary": {
             "state": {
-              "released": "发布于 {date}。",
-              "scheduled": "计划于 {date} 安装。",
+              "released": "发布日期",
+              "scheduled": "计划安装日期",
               "auto_update_off": "此发电机已关闭自动固件更新。"
             }
           }

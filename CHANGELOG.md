@@ -32,6 +32,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Setup asks only for your email and password. The Energy Mgmt. app's own client ID, client
+  secret and API key are built into the integration and are no longer saved with the account.
+  A form for entering them by hand appears only if Rehlko refuses them, and **Reconfigure**
+  keeps a section for them. An entry that holds a copy of the same values drops it the next
+  time it loads.
 - Versions are numbered `MAJOR.NN` from 1.00 (1.01 … 1.99, then 2.00), and releases are
   published by the repository's Release workflow.
 - Catch-all diagnostic entities are created disabled. They are still listed on the device
@@ -55,6 +60,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- After the host restarts, the account details and notification settings are read on the first
+  poll. They used to wait until the machine had been up for fifteen minutes, which left the
+  notification switches missing after a reboot, and the activity feeds could be read twice.
+- The firmware update's summary passes Home Assistant's validation: it reads "Released:
+  2026-11-01. Scheduled installation: …" in every language.
+- No deprecation warnings on Home Assistant 2026.10: devices are looked up, linked and removed
+  in the way newer versions expect, and sign-in no longer uses a retired aiohttp helper.
 - A password sign-in that Rehlko's sign-in service refuses (for example because the account
   requires multi-factor authentication) is reported as such, not as a wrong password.
 - Diagnostics no longer include the account's ID. Log lines name the integration, not the

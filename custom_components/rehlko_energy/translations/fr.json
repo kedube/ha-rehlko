@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Connexion à Rehlko Energy Management",
-        "description": "Utilisez l'adresse courriel et le mot de passe que vous utilisez dans l'application Energy Mgmt. (anciennement KOHLER Energy Management). Les identifiants de l'application ci-dessous permettent d'identifier l'application auprès du service de connexion de Rehlko. Consultez la documentation de l'intégration pour savoir où les trouver.",
+        "description": "Utilisez l'adresse courriel et le mot de passe que vous utilisez dans l'application Energy Mgmt. (anciennement KOHLER Energy Management).",
         "data": {
           "username": "Adresse courriel",
           "password": "Mot de passe"
@@ -11,22 +11,20 @@
         "data_description": {
           "username": "L'adresse courriel de votre compte Rehlko / Kohler Energy Management.",
           "password": "Conservé dans Home Assistant pour que l'intégration puisse se reconnecter lorsque sa session expire."
+        }
+      },
+      "app_credentials": {
+        "title": "Identifiants de l'application",
+        "description": "Le service de Rehlko n'a pas accepté les identifiants de l'application intégrés à cette intégration ; saisissez donc ici les identifiants actuels de l'application. Ils identifient l'application, et non votre compte. La documentation de l'intégration explique où les trouver.",
+        "data": {
+          "client_id": "ID client OAuth",
+          "client_secret": "Secret client OAuth",
+          "api_key": "Clé d'API"
         },
-        "sections": {
-          "app_credentials": {
-            "name": "Identifiants de l'application",
-            "description": "L'ID client OAuth, le secret client et la clé d'API provenant de la configuration de l'application Energy Mgmt.",
-            "data": {
-              "client_id": "ID client OAuth",
-              "client_secret": "Secret client OAuth",
-              "api_key": "Clé d'API"
-            },
-            "data_description": {
-              "client_id": "CLIENT_ID dans le fichier de configuration de l'application.",
-              "client_secret": "CLIENT_SECRET dans le fichier de configuration de l'application.",
-              "api_key": "API_KEY dans le fichier de configuration de l'application."
-            }
-          }
+        "data_description": {
+          "client_id": "CLIENT_ID dans le fichier de configuration de l'application.",
+          "client_secret": "CLIENT_SECRET dans le fichier de configuration de l'application.",
+          "api_key": "API_KEY dans le fichier de configuration de l'application."
         }
       },
       "reauth_confirm": {
@@ -51,7 +49,7 @@
         "sections": {
           "app_credentials": {
             "name": "Identifiants de l'application",
-            "description": "L'ID client OAuth, le secret client et la clé d'API provenant de la configuration de l'application Energy Mgmt.",
+            "description": "Nécessaire uniquement si les identifiants de l'application intégrés à l'intégration cessent de fonctionner. Laissez les trois champs vides pour utiliser les identifiants intégrés.",
             "data": {
               "client_id": "ID client OAuth",
               "client_secret": "Secret client OAuth",
@@ -70,6 +68,7 @@
       "invalid_auth": "L'adresse courriel ou le mot de passe n'a pas été accepté.",
       "sign_in_denied": "Le service de connexion de Rehlko a refusé la connexion par mot de passe pour ce compte. Cela se produit lorsque le compte exige une authentification multifacteur, que cette intégration ne peut pas effectuer.",
       "invalid_app_credentials": "Le service de connexion a refusé l'ID client ou le secret client de l'application.",
+      "incomplete_app_credentials": "Saisissez les trois identifiants de l'application, ou laissez les trois champs vides pour utiliser les identifiants intégrés.",
       "invalid_api_key": "Connexion réussie, mais l'API a refusé la requête. Vérifiez la clé d'API.",
       "cannot_connect": "Impossible de joindre le service Rehlko.",
       "no_generators": "Connexion réussie, mais ce compte ne comporte aucune génératrice.",
@@ -736,8 +735,8 @@
         "state_attributes": {
           "release_summary": {
             "state": {
-              "released": "Publié le {date}.",
-              "scheduled": "Installation planifiée le {date}.",
+              "released": "Publication",
+              "scheduled": "Installation planifiée",
               "auto_update_off": "Les mises à jour automatiques du micrologiciel sont désactivées pour cette génératrice."
             }
           }

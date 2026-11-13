@@ -244,9 +244,12 @@ def field(name: str, description: str) -> dict:
 DEVICE_FIELD = field("Generator", "The generator (or its transfer switch) to act on.")
 MODE_FIELD = field("Mode", "Unloaded, unloaded full speed, loaded full speed, or EcoExercise.")
 
+# The app's own credentials are written into the integration. These texts are for the two
+# places they can be entered by hand: a setup step shown only when Rehlko refuses the built-in
+# set, and a section of the reconfigure form.
 APP_CREDENTIALS = {
-    "name": "App credentials",
-    "description": "The OAuth client ID, client secret and API key from the Energy Mgmt. app's configuration.",
+    "title": "App credentials",
+    "description": "Rehlko's service did not accept the app credentials built into this integration, so enter the app's current ones here. They identify the app, not your account; the integration's documentation explains where to find them.",
     "data": {
         "client_id": "OAuth client ID",
         "client_secret": "OAuth client secret",
@@ -264,7 +267,9 @@ PASSWORD_HELP = (
 # Reconfiguring: the stored secret and API key are not shown, and an empty field keeps them.
 KEEP_STORED = "Leave empty to keep the stored value."
 STORED_APP_CREDENTIALS = {
-    **APP_CREDENTIALS,
+    "name": APP_CREDENTIALS["title"],
+    "description": "Only needed if the app credentials built into the integration stop working. Leave all three fields empty to use the built-in ones.",
+    "data": APP_CREDENTIALS["data"],
     "data_description": {
         "client_id": APP_CREDENTIALS["data_description"]["client_id"],
         "client_secret": KEEP_STORED,
@@ -277,14 +282,14 @@ STRINGS = {
         "step": {
             "user": {
                 "title": "Sign in to Rehlko Energy Management",
-                "description": "Use the email and password you use in the Energy Mgmt. (formerly KOHLER Energy Management) app. The app credentials below identify the app to Rehlko's sign-in service; see the integration's documentation for where to find them.",
+                "description": "Use the email and password you use in the Energy Mgmt. (formerly KOHLER Energy Management) app.",
                 "data": {"username": "Email", "password": "Password"},
                 "data_description": {
                     "username": "The email address of your Rehlko / Kohler Energy Management account.",
                     "password": PASSWORD_HELP,
                 },
-                "sections": {"app_credentials": APP_CREDENTIALS},
             },
+            "app_credentials": APP_CREDENTIALS,
             "reauth_confirm": {
                 "title": "Sign in again",
                 "description": "Rehlko asked for the password for {username} again.",
@@ -303,6 +308,7 @@ STRINGS = {
             "invalid_auth": "The email or password was not accepted.",
             "sign_in_denied": "Rehlko's sign-in service refused a password sign-in for this account. That happens when the account requires multi-factor authentication, which this integration cannot complete.",
             "invalid_app_credentials": "The sign-in service rejected the app's client ID or client secret.",
+            "incomplete_app_credentials": "Enter all three app credentials, or leave all three empty to use the built-in ones.",
             "invalid_api_key": "Signed in, but the API rejected the request; check the API key.",
             "cannot_connect": "Could not reach the Rehlko service.",
             "no_generators": "Signed in, but this account has no generators.",
@@ -559,6 +565,18 @@ def leaves(tree: dict[str, Any], path: tuple[str, ...] = ()) -> Iterator[tuple[s
             yield ".".join((*path, key)), value
 
 
+# Where hassfest accepts no {placeholders}: an entity's states, its attributes' names and states,
+# and its unit ("placeholders are not supported in this value").
+NO_PLACEHOLDERS = re.compile(
+    r"entity\.[^.]+\.[^.]+\.(state\.|state_attributes\.|unit_of_measurement$)"
+)
+
+
+def misplaced_placeholder(dotted: str, text: str) -> bool:
+    """Whether `text` has a placeholder at a key where Home Assistant accepts none."""
+    return bool(NO_PLACEHOLDERS.match(dotted)) and "{" in text
+
+
 def problems_with(source: str, value: Any) -> list[str]:
     """Why `value` cannot stand in for `source` (Home Assistant's rules, plus placeholders)."""
     if not isinstance(value, str) or not value:
@@ -680,6 +698,9 @@ def main() -> int:
         for dotted, text in leaves(STRINGS):
             for issue in problems_with(text, text):
                 print(f"error: {dotted}: the English text {issue}")
+                failed = True
+            if misplaced_placeholder(dotted, text):
+                print(f"error: {dotted}: Home Assistant accepts no placeholder here ({text!r})")
                 failed = True
         english = render(STRINGS)
         outputs[COMPONENT / "strings.json"] = english

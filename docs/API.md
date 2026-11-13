@@ -63,9 +63,16 @@ The app identifies itself with three values from `flutter_assets/.env`. They ide
 | `CLIENT_SECRET` | Okta OAuth client secret (the client is confidential; HTTP Basic at the token endpoint) |
 | `API_KEY` | Sent as the `ApiKey` header on every `/kem/api/v3` call |
 
-This integration does **not** bundle those three values. You provide them during setup (the
-config flow has an **App credentials** section), and they are stored with the config entry.
-To read them from the copy of the app installed on a Mac:
+This integration carries those three values, in `app_credentials.py`. They are the same ones
+that `aiokem`, the library behind Home Assistant's built‑in Rehlko integration, publishes (its
+`API_KEY`, and its `CLIENT_KEY`, which is the client ID and secret joined as an HTTP Basic
+value).
+
+Entering them by hand is the fallback, for when Rehlko has changed them and a release of this
+integration has not caught up. Setup then shows an **App credentials** form, and
+**Reconfigure** always has an **App credentials** section. A set entered by hand is saved with
+the config entry and takes precedence; clearing it in **Reconfigure** goes back to the
+built‑in one. To read the current ones from the copy of the app installed on a Mac:
 
 ```bash
 grep -E '^(CLIENT_ID|CLIENT_SECRET|API_KEY)=' \
@@ -75,7 +82,9 @@ grep -E '^(CLIENT_ID|CLIENT_SECRET|API_KEY)=' \
 Each line reads `NAME='value'`. The quotes are not part of the value; the setup form removes
 them if you paste them.
 
-(If a future app release rotates them, re‑read the file and use **Reconfigure** on the entry.)
+(If a future app release rotates them, re‑read the file and update `BUILTIN` in
+`app_credentials.py`. Until that is released, **Reconfigure** on the entry takes the new
+ones.)
 
 ### Token endpoint
 

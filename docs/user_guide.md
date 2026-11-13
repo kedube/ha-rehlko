@@ -169,18 +169,25 @@ Mirroring the app, the integration refuses an action and raises a clear error wh
 
 ## Your credentials
 
-- The integration keeps your account email and password, the app's client ID, client secret
-  and API key, and a refresh token in Home Assistant's config entry storage
-  (`.storage/core.config_entries`), which is where every integration's credentials live. Home
-  Assistant does not encrypt that file; it is protected by the file permissions of your Home
-  Assistant installation, and it is included in backups (which can be encrypted).
+- The integration keeps your account email and password and a refresh token in Home
+  Assistant's config entry storage (`.storage/core.config_entries`), which is where every
+  integration's credentials live. Home Assistant does not encrypt that file; it is protected
+  by the file permissions of your Home Assistant installation, and it is included in backups
+  (which can be encrypted).
+- The Energy Mgmt. app's own credentials (its OAuth client ID and secret, and its API key)
+  identify the app, not you, and are the same for everyone. They are built into the
+  integration, so setup does not ask for them and they are not saved with your account. If
+  Rehlko stops accepting them, setup shows an **App credentials** form, and **Reconfigure**
+  has an **App credentials** section; a set you enter there is saved with the entry and used
+  from then on.
 - The password is kept so the integration can sign in again by itself if the refresh token
   expires. Nothing else uses it.
 - None of these values is written to the log, included in **Download diagnostics**, sent to
   the sidebar panel, or returned by any action. Diagnostics also leave out your email, account
   ID, address, serial numbers and free‑text notes.
-- **Reconfigure** shows the client ID only. The stored client secret and API key are not sent
-  back to your browser; leave those fields empty to keep them.
+- If you entered app credentials yourself, **Reconfigure** shows the client ID only. The
+  saved client secret and API key are not sent back to your browser; leave those fields empty
+  to keep them, or clear all three to go back to the built‑in set.
 
 ## Troubleshooting
 
@@ -190,8 +197,13 @@ Mirroring the app, the integration refuses an action and raises a clear error wh
   cannot complete a second step.
 - **Re‑authentication requested.** Your password changed, or the refresh token was revoked.
   Follow the prompt and re‑enter the password.
-- **"Signed in, but the API rejected the request."** The API key is wrong — update it with
-  **Reconfigure** on the entry (the app may have rotated it).
+- **"Signed in, but the API rejected the request."** The API key is wrong. If you entered app
+  credentials yourself, update them with **Reconfigure** on the entry, or clear them there to
+  use the built‑in set.
+- **"The sign‑in service rejected the app's client ID or client secret."** Rehlko has changed
+  the app's credentials. Update the integration; until a release has the new ones, open
+  **Reconfigure** on the entry and enter them in **App credentials**
+  ([API.md](API.md#authentication) says where to find them).
 - **Stale data / offline.** Check the generator's own connectivity; the panel's Diagnostics tab
   shows the last successful refresh.
 - **Diagnostics for a bug report:** the entry's **Download diagnostics** redacts serial numbers,

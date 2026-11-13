@@ -154,16 +154,13 @@ def test_update_summary_is_translatable(sample_gen) -> None:
     entity = update_mod.FirmwareUpdate(coord, 1)
     sample_gen.details["autoFirmwareUpdateEnabled"] = False
     english = entity.release_summary
-    assert english.startswith("Released 2026-11-01. Scheduled to install 2026-")
+    assert english.startswith("Released: 2026-11-01. Scheduled installation: 2026-")
     assert english.endswith("Automatic firmware updates are off for this generator.")
     prefix = "update.firmware.state_attributes.release_summary.state"
-    entity._texts = {
-        f"{prefix}.released": "Publicado el {date}.",
-        # A translation with a broken placeholder must not break the entity.
-        f"{prefix}.scheduled": "Instalación programada: {fecha}.",
-    }
+    # One label translated, the other missing: the English label stands in for it.
+    entity._texts = {f"{prefix}.released": "Publicado"}
     summary = entity.release_summary
-    assert summary.startswith("Publicado el 2026-11-01. Scheduled to install 2026-")
+    assert summary.startswith("Publicado: 2026-11-01. Scheduled installation: 2026-")
     assert len(summary) <= 255
 
 

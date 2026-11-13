@@ -1,9 +1,8 @@
 """Exercise the integration lifecycle against Home Assistant, without the cloud."""
 
 import json
-from copy import deepcopy
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
@@ -18,25 +17,7 @@ from custom_components.rehlko_energy.coordinator import RehlkoCoordinator
 from custom_components.rehlko_energy.models import AccountData
 from custom_components.rehlko_energy.sidebar import STATIC_URL, URL_PATH, async_setup_sidebar
 
-from .test_entities import SAMPLE_DETAILS, SAMPLE_DEVICE, build_sample_gen
-
-
-@pytest.fixture
-def client():
-    api = MagicMock()
-    for name, value in {
-        "get_homes": [{"id": 1, "devices": [SAMPLE_DEVICE]}],
-        "get_device": SAMPLE_DETAILS,
-        "get_events": [],
-        "get_alerts": [],
-        "get_notifications": [],
-        "get_maintenance_notes": [],
-        "get_cell_plan": {},
-        "get_me": {"id": "owner"},
-        "get_notification_settings": {"sendShutdowns": True, "sendWarnings": True},
-    }.items():
-        setattr(api, name, AsyncMock(return_value=deepcopy(value)))
-    return api
+from .test_entities import SAMPLE_DEVICE, build_sample_gen
 
 
 @pytest.fixture
@@ -145,13 +126,58 @@ async def test_failed_initial_feeds_do_not_announce_historical_items(hass, entry
         assert fire.call_args.args[0].item["id"] == 2
 
 
-async def test_new_generator_fetches_feeds_before_next_global_interval(hass, entry, client):
-    coordinator = RehlkoCoordinator(hass, entry, client)
-    coordinator.data = await coordinator._async_update_data()
-    client.get_events.reset_mock()
-    client.get_homes.return_value[0]["devices"].append({**SAMPLE_DEVICE, "id": 2})
-    coordinator.data = await coordinator._async_update_data()
+# How long the machine has been up, in seconds: the monotonic clock counts from boot. The first
+# three are a host that has just started, which is when Home Assistant itself usually starts.
+UPTIMES = [5.0, 45.0, 119.0, 5000.0]
+MONOTONIC = "custom_components.rehlko_energy.coordinator.time.monotonic"
+
+
+@pytest.mark.parametrize("uptime", UPTIMES)
+async def test_new_generator_fetches_feeds_before_next_global_interval(hass, entry, client, uptime):
+    with patch(MONOTONIC, return_value=uptime):
+        coordinator = RehlkoCoordinator(hass, entry, client)
+        coordinator.data = await coordinator._async_update_data()
+        client.get_events.reset_mock()
+        client.get_homes.return_value[0]["devices"].append({**SAMPLE_DEVICE, "id": 2})
+        coordinator.data = await coordinator._async_update_data()
     client.get_events.assert_awaited_once_with(2, SAMPLE_DEVICE["deviceHost"])
+
+
+@pytest.mark.parametrize("uptime", UPTIMES)
+async def test_the_first_refresh_reads_everything_however_recently_the_host_booted(
+    hass, entry, client, uptime
+):
+    with patch(MONOTONIC, return_value=uptime):
+        coordinator = RehlkoCoordinator(hass, entry, client)
+        coordinator.data = await coordinator._async_update_data()
+        # The account and its notification settings, not only the generators.
+        assert coordinator.data.me == {"id": "owner"}
+        assert coordinator.data.notification_settings == {
+            "sendShutdowns": True,
+            "sendWarnings": True,
+        }
+        client.get_events.assert_awaited_once()
+        # A second refresh at the same moment has nothing due.
+        for call in (client.get_me, client.get_notification_settings, client.get_events):
+            call.reset_mock()
+        coordinator.data = await coordinator._async_update_data()
+    for call in (client.get_me, client.get_notification_settings, client.get_events):
+        call.assert_not_awaited()
+
+
+async def test_feeds_and_account_are_read_again_once_their_intervals_pass(hass, entry, client):
+    with patch(MONOTONIC, return_value=10.0) as clock:
+        coordinator = RehlkoCoordinator(hass, entry, client)
+        coordinator.data = await coordinator._async_update_data()
+        client.get_events.reset_mock()
+        client.get_me.reset_mock()
+        clock.return_value = 10.0 + 121.0  # past the two-minute feed interval
+        coordinator.data = await coordinator._async_update_data()
+        client.get_events.assert_awaited_once()
+        client.get_me.assert_not_awaited()
+        clock.return_value = 10.0 + 901.0  # past the fifteen-minute account interval
+        coordinator.data = await coordinator._async_update_data()
+        client.get_me.assert_awaited_once()
 
 
 async def test_new_generators_get_all_platform_entities(
@@ -261,7 +287,7 @@ async def test_calendar_and_update_load_texts_in_the_servers_language(
     (update,) = hass.states.async_all("update")
     released = spanish["entity"]["update"]["firmware"]["state_attributes"]["release_summary"]
     assert update.attributes["release_summary"].startswith(
-        released["state"]["released"].format(date="2026-11-01")
+        f"{released['state']['released']}: 2026-11-01."
     )
 
 
@@ -353,6 +379,23 @@ async def test_generators_that_leave_the_account_lose_their_devices(
         assert hass.states.get("sensor.home_generator_battery_voltage") is not None
 
 
+async def test_the_transfer_switch_is_linked_to_its_generator(
+    hass, entry, client, enable_custom_integrations
+):
+    from homeassistant.helpers import device_registry as dr
+
+    with patch("custom_components.rehlko_energy.build_client", return_value=client):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    devices = {
+        identifier: device
+        for device in dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+        for _, identifier in device.identifiers
+    }
+    assert devices["1:ats"].via_device_id == devices["1"].id
+    assert devices["1"].via_device_id is None
+
+
 async def test_a_generator_that_comes_back_is_not_removed(
     hass, entry, client, enable_custom_integrations
 ):
@@ -367,7 +410,8 @@ async def test_a_generator_that_comes_back_is_not_removed(
         for present in (False, False, True, False, False, True):
             client.get_homes.return_value = [{"id": 1, "devices": both if present else both[:1]}]
             await coordinator.async_refresh()
-    assert dr.async_get(hass).async_get_device(identifiers={(DOMAIN, "2")}) is not None
+    devices = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    assert any((DOMAIN, "2") in device.identifiers for device in devices)
 
 
 async def test_the_panel_is_sent_bulky_fields_only_when_they_change(

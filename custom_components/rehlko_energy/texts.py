@@ -4,6 +4,8 @@ Home Assistant translates entity names and states in the browser, but a calendar
 is data, so it is written here in Home Assistant's configured language. The English below is
 both the fallback and the source for `scripts/build_translations.py`, which publishes each
 group under `entity.<PATH>.<key>` — the place Home Assistant keeps translated attribute values.
+Home Assistant accepts no `{placeholders}` there, so a text that carries a date is a label and
+the date is added after it.
 
 This module must stay free of Home Assistant imports: the build script loads it on its own.
 """
@@ -25,8 +27,8 @@ CALENDAR_DESCRIPTION: Final[dict[str, str]] = {
     "maintenance_due": "Next scheduled maintenance for the generator.",
 }
 FIRMWARE_SUMMARY: Final[dict[str, str]] = {
-    "released": "Released {date}.",
-    "scheduled": "Scheduled to install {date}.",
+    "released": "Released",
+    "scheduled": "Scheduled installation",
     "auto_update_off": "Automatic firmware updates are off for this generator.",
 }
 

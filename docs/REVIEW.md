@@ -74,7 +74,7 @@ The owner answered the first pass's recommendations; these were acted on.
 Run against Python 3.13.7, Home Assistant 2026.2.3 with its 20260128.6 frontend package, and
 Node 26.13.1. The cloud is replaced with test responses throughout.
 
-- **215 Python tests passed**, 87% statement coverage. New coverage includes Home Assistant set
+- **250 Python tests passed**, 87% statement coverage. New coverage includes Home Assistant set
   to Spanish end to end (entity name, calendar event title and firmware summary come out
   translated), the sidebar title per language, translation structure and placeholders for every
   language, log-once availability, the unload flush, quoted credentials, the unique-ID
@@ -88,6 +88,16 @@ Node 26.13.1. The cloud is replaced with test responses throughout.
 - `python3 scripts/build_translations.py --check --strict` passes: all nine catalogues are
   complete (429 of 429 texts each), and every panel locale has all 170 messages.
 - Ruff lint and format checks pass.
+- The app's own credentials are built into the integration (added after this review, in
+  `app_credentials.py`). They were taken from the installed app and are the same values that
+  `aiokem`, the library behind Home Assistant's built-in Rehlko integration, publishes; no
+  sign-in against the live service was made with them.
+- After the first push, GitHub's checks failed on two things this review had not run: hassfest
+  (no `{placeholders}` in attribute state texts) and the newest Home Assistant, 2026.10.4 on
+  Python 3.14 (a removed test dependency, a deprecated device lookup, and a first-refresh bug
+  that only shows on a machine up for less than two minutes). All are fixed. The suite now
+  passes on both 2026.2.3 and 2026.10.4 with no deprecation warnings naming the integration,
+  and hassfest from Home Assistant's development branch reports no invalid integrations.
 - The Release workflow (added after this review, see the README's Releases section) passes
   `actionlint`, and its shell steps were run against a throwaway repository with a stand-in for
   the GitHub CLI: first release, minor and major releases, a run with nothing new, a publish

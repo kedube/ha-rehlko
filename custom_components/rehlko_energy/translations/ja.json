@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Rehlko Energy Management にサインイン",
-        "description": "Energy Mgmt.（旧 KOHLER Energy Management）アプリで使用しているメールアドレスとパスワードを入力してください。下記のアプリの認証情報は、Rehlko のサインインサービスに対してアプリを識別するためのものです。入手方法については、この統合のドキュメントを参照してください。",
+        "description": "Energy Mgmt.（旧 KOHLER Energy Management）アプリで使用しているメールアドレスとパスワードを入力してください。",
         "data": {
           "username": "メールアドレス",
           "password": "パスワード"
@@ -11,22 +11,20 @@
         "data_description": {
           "username": "Rehlko / Kohler Energy Management アカウントのメールアドレスです。",
           "password": "セッションの有効期限が切れたときに統合が再度サインインできるよう、Home Assistant に保存されます。"
+        }
+      },
+      "app_credentials": {
+        "title": "アプリの認証情報",
+        "description": "この統合に組み込まれているアプリの認証情報が Rehlko のサービスに受け付けられなかったため、アプリの現在の認証情報をここに入力してください。これらはアカウントではなくアプリを識別するためのものです。入手方法については、この統合のドキュメントを参照してください。",
+        "data": {
+          "client_id": "OAuth クライアント ID",
+          "client_secret": "OAuth クライアントシークレット",
+          "api_key": "API キー"
         },
-        "sections": {
-          "app_credentials": {
-            "name": "アプリの認証情報",
-            "description": "Energy Mgmt. アプリの設定に含まれる OAuth クライアント ID、クライアントシークレット、API キーです。",
-            "data": {
-              "client_id": "OAuth クライアント ID",
-              "client_secret": "OAuth クライアントシークレット",
-              "api_key": "API キー"
-            },
-            "data_description": {
-              "client_id": "アプリの設定ファイルにある CLIENT_ID です。",
-              "client_secret": "アプリの設定ファイルにある CLIENT_SECRET です。",
-              "api_key": "アプリの設定ファイルにある API_KEY です。"
-            }
-          }
+        "data_description": {
+          "client_id": "アプリの設定ファイルにある CLIENT_ID です。",
+          "client_secret": "アプリの設定ファイルにある CLIENT_SECRET です。",
+          "api_key": "アプリの設定ファイルにある API_KEY です。"
         }
       },
       "reauth_confirm": {
@@ -51,7 +49,7 @@
         "sections": {
           "app_credentials": {
             "name": "アプリの認証情報",
-            "description": "Energy Mgmt. アプリの設定に含まれる OAuth クライアント ID、クライアントシークレット、API キーです。",
+            "description": "統合に組み込まれているアプリの認証情報が使えなくなった場合にのみ必要です。組み込みのものを使用するには、3 つの欄をすべて空欄のままにしてください。",
             "data": {
               "client_id": "OAuth クライアント ID",
               "client_secret": "OAuth クライアントシークレット",
@@ -70,6 +68,7 @@
       "invalid_auth": "メールアドレスまたはパスワードが受け付けられませんでした。",
       "sign_in_denied": "Rehlko のサインインサービスが、このアカウントのパスワードによるサインインを拒否しました。アカウントで多要素認証が必要な場合に発生します。この統合では多要素認証を完了できません。",
       "invalid_app_credentials": "サインインサービスがアプリのクライアント ID またはクライアントシークレットを拒否しました。",
+      "incomplete_app_credentials": "アプリの認証情報を 3 つすべて入力するか、組み込みのものを使用する場合は 3 つとも空欄のままにしてください。",
       "invalid_api_key": "サインインはできましたが、API がリクエストを拒否しました。API キーを確認してください。",
       "cannot_connect": "Rehlko サービスに接続できませんでした。",
       "no_generators": "サインインはできましたが、このアカウントには発電機がありません。",
@@ -736,8 +735,8 @@
         "state_attributes": {
           "release_summary": {
             "state": {
-              "released": "{date} にリリースされました。",
-              "scheduled": "{date} にインストール予定です。",
+              "released": "リリース日",
+              "scheduled": "インストール予定日",
               "auto_update_off": "この発電機ではファームウェアの自動アップデートがオフになっています。"
             }
           }

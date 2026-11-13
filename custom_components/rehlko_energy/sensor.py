@@ -28,6 +28,7 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
@@ -920,6 +921,15 @@ class RehlkoSensor(RehlkoEntity, SensorEntity):
         self.entity_description = description
         if description.enum_values is not None:
             self._base_options = _slug_options(description.enum_values)
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        # Read when Home Assistant registers the entity: only then can the transfer switch be
+        # linked to its generator's device, which has to be in the device registry first.
+        gen = self.gen
+        if self.entity_description.on_ats and gen is not None and self.hass is not None:
+            return ats_device_info(gen, self.coordinator)
+        return self._attr_device_info
 
     @property
     def native_value(self) -> Any:

@@ -192,8 +192,10 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
         )
         self.client = client
         self.seen = SeenTracker(hass, entry.entry_id)
-        self._last_feeds = 0.0
-        self._last_slow = 0.0
+        # None until the first refresh. Not 0.0: the monotonic clock counts from boot, so on
+        # a host that has just started, 0.0 is moments ago and nothing would look due.
+        self._last_feeds: float | None = None
+        self._last_slow: float | None = None
         self._force_feeds: set[int] = set()
         self._feed_listeners: list[Callable[[FeedItem], None]] = []
         self._follow_ups: list[CALLBACK_TYPE] = []
@@ -257,8 +259,8 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
         feed_interval = self._feed_interval.total_seconds()
         if was_active:
             feed_interval = min(feed_interval, max(30.0, self._active_interval.total_seconds() * 2))
-        feeds_due = now - self._last_feeds >= feed_interval
-        slow_due = now - self._last_slow >= SLOW_REFRESH.total_seconds()
+        feeds_due = self._last_feeds is None or now - self._last_feeds >= feed_interval
+        slow_due = self._last_slow is None or now - self._last_slow >= SLOW_REFRESH.total_seconds()
 
         generators: dict[int, GeneratorData] = {}
         forced = self._force_feeds
@@ -342,9 +344,14 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                 continue
             for device in devices[generator_id]:
                 _LOGGER.info("Removing %s: it is no longer on the account", device.name)
-                registry.async_update_device(
-                    device.id, remove_config_entry_id=self.config_entry.entry_id
-                )
+                entry_id = self.config_entry.entry_id
+                # Newer Home Assistant gives every device one config entry (`config_entry_id`).
+                # Older versions share a device between two accounts that both list the
+                # generator, and there it is only detached from this account.
+                if hasattr(device, "config_entry_id") or device.config_entries <= {entry_id}:
+                    registry.async_remove_device(device.id)
+                else:
+                    registry.async_update_device(device.id, remove_config_entry_id=entry_id)
             self._unreachable.discard(generator_id)
 
     async def _async_refresh_account(
@@ -530,10 +537,15 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
         return out
 
     def ha_device_id(self, gen: GeneratorData) -> str | None:
-        device = dr.async_get(self.hass).async_get_device(
-            identifiers={(DOMAIN, str(gen.device_id))}
-        )
-        return device.id if device else None
+        # Among this entry's own devices: newer Home Assistant lets another entry hold a
+        # device with the same identifier, and deprecates the registry-wide lookup.
+        identifier = (DOMAIN, str(gen.device_id))
+        for device in dr.async_entries_for_config_entry(
+            dr.async_get(self.hass), self.config_entry.entry_id
+        ):
+            if identifier in device.identifiers:
+                return device.id
+        return None
 
     def _fire(self, feed_item: FeedItem) -> None:
         gen, item = feed_item.generator, feed_item.item

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Zaloguj się do Rehlko Energy Management",
-        "description": "Użyj adresu e-mail i hasła, których używasz w aplikacji Energy Mgmt. (dawniej KOHLER Energy Management). Poniższe dane uwierzytelniające aplikacji identyfikują aplikację w usłudze logowania Rehlko; informacje o tym, gdzie je znaleźć, zawiera dokumentacja integracji.",
+        "description": "Użyj adresu e-mail i hasła, których używasz w aplikacji Energy Mgmt. (dawniej KOHLER Energy Management).",
         "data": {
           "username": "Adres e-mail",
           "password": "Hasło"
@@ -11,22 +11,20 @@
         "data_description": {
           "username": "Adres e-mail Twojego konta Rehlko / Kohler Energy Management.",
           "password": "Przechowywane w Home Assistant, aby integracja mogła zalogować się ponownie po wygaśnięciu sesji."
+        }
+      },
+      "app_credentials": {
+        "title": "Dane uwierzytelniające aplikacji",
+        "description": "Usługa Rehlko nie przyjęła danych uwierzytelniających aplikacji wbudowanych w tę integrację, dlatego wprowadź tutaj aktualne dane aplikacji. Identyfikują one aplikację, a nie Twoje konto; informacje o tym, gdzie je znaleźć, zawiera dokumentacja integracji.",
+        "data": {
+          "client_id": "Identyfikator klienta OAuth",
+          "client_secret": "Sekret klienta OAuth",
+          "api_key": "Klucz API"
         },
-        "sections": {
-          "app_credentials": {
-            "name": "Dane uwierzytelniające aplikacji",
-            "description": "Identyfikator klienta OAuth, sekret klienta i klucz API z konfiguracji aplikacji Energy Mgmt.",
-            "data": {
-              "client_id": "Identyfikator klienta OAuth",
-              "client_secret": "Sekret klienta OAuth",
-              "api_key": "Klucz API"
-            },
-            "data_description": {
-              "client_id": "CLIENT_ID w pliku konfiguracyjnym aplikacji.",
-              "client_secret": "CLIENT_SECRET w pliku konfiguracyjnym aplikacji.",
-              "api_key": "API_KEY w pliku konfiguracyjnym aplikacji."
-            }
-          }
+        "data_description": {
+          "client_id": "CLIENT_ID w pliku konfiguracyjnym aplikacji.",
+          "client_secret": "CLIENT_SECRET w pliku konfiguracyjnym aplikacji.",
+          "api_key": "API_KEY w pliku konfiguracyjnym aplikacji."
         }
       },
       "reauth_confirm": {
@@ -51,7 +49,7 @@
         "sections": {
           "app_credentials": {
             "name": "Dane uwierzytelniające aplikacji",
-            "description": "Identyfikator klienta OAuth, sekret klienta i klucz API z konfiguracji aplikacji Energy Mgmt.",
+            "description": "Potrzebne tylko wtedy, gdy dane uwierzytelniające aplikacji wbudowane w integrację przestaną działać. Pozostaw wszystkie trzy pola puste, aby używać wbudowanych.",
             "data": {
               "client_id": "Identyfikator klienta OAuth",
               "client_secret": "Sekret klienta OAuth",
@@ -70,6 +68,7 @@
       "invalid_auth": "Adres e-mail lub hasło nie zostały zaakceptowane.",
       "sign_in_denied": "Usługa logowania Rehlko odrzuciła logowanie hasłem dla tego konta. Dzieje się tak, gdy konto wymaga uwierzytelniania wieloskładnikowego, którego ta integracja nie może przeprowadzić.",
       "invalid_app_credentials": "Usługa logowania odrzuciła identyfikator klienta lub sekret klienta aplikacji.",
+      "incomplete_app_credentials": "Wprowadź wszystkie trzy dane uwierzytelniające aplikacji albo pozostaw wszystkie trzy pola puste, aby używać wbudowanych.",
       "invalid_api_key": "Zalogowano, ale API odrzuciło żądanie; sprawdź klucz API.",
       "cannot_connect": "Nie można połączyć się z usługą Rehlko.",
       "no_generators": "Zalogowano, ale to konto nie ma żadnych agregatów.",
@@ -736,8 +735,8 @@
         "state_attributes": {
           "release_summary": {
             "state": {
-              "released": "Wydano: {date}.",
-              "scheduled": "Instalację zaplanowano na: {date}.",
+              "released": "Wydano",
+              "scheduled": "Planowana instalacja",
               "auto_update_off": "Automatyczne aktualizacje oprogramowania układowego są wyłączone dla tego agregatu."
             }
           }

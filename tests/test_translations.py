@@ -76,6 +76,15 @@ def test_translation_fits_the_english(path: Path) -> None:
     assert len(translated) >= 0.95 * len(ENGLISH), f"{path.name} is missing most translations"
 
 
+@pytest.mark.parametrize("path", [COMPONENT / "strings.json", *TRANSLATIONS], ids=lambda p: p.stem)
+def test_states_attributes_and_units_have_no_placeholders(path: Path) -> None:
+    """hassfest: "placeholders are not supported in this value"."""
+    where = re.compile(r"entity\.[^.]+\.[^.]+\.(state\.|state_attributes\.|unit_of_measurement$)")
+    tree = json.loads(path.read_text(encoding="utf-8"))
+    offenders = {key: text for key, text in leaves(tree) if where.match(key) and "{" in text}
+    assert not offenders
+
+
 def test_services_yaml_matches_strings_and_module() -> None:
     import ast
 

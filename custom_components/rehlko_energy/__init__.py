@@ -14,12 +14,14 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
 from .api import AppCredentials, OktaAuth, RehlkoClient
+from .app_credentials import (
+    builtin_app_credentials,
+    stored_app_credentials,
+    without_app_credentials,
+)
 from .const import (
     API_BASE_URL,
-    CONF_API_KEY,
     CONF_BASE_URL,
-    CONF_CLIENT_ID,
-    CONF_CLIENT_SECRET,
     CONF_REFRESH_TOKEN,
     DOMAIN,
     OKTA_SCOPES,
@@ -57,10 +59,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-def build_client(hass: HomeAssistant, entry: ConfigEntry) -> RehlkoClient:
+def build_client(hass: HomeAssistant, entry: ConfigEntry, app: AppCredentials) -> RehlkoClient:
     session = async_get_clientsession(hass)
     data = entry.data
-    app = AppCredentials(data[CONF_CLIENT_ID], data[CONF_CLIENT_SECRET], data[CONF_API_KEY])
 
     def _persist(token: str) -> None:
         if entry.data.get(CONF_REFRESH_TOKEN) != token:
@@ -104,7 +105,16 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: RehlkoConfigEntry) -> bool:
-    coordinator = RehlkoCoordinator(hass, entry, build_client(hass, entry))
+    builtin = builtin_app_credentials()
+    stored = stored_app_credentials(entry.data)
+    if stored == builtin:
+        # The entry holds a copy of the built-in set (it was entered by hand before the
+        # integration carried one). Without the copy, a release that updates the built-in set
+        # reaches this entry too.
+        hass.config_entries.async_update_entry(entry, data=without_app_credentials(entry.data))
+        stored = None
+    app = stored or builtin
+    coordinator = RehlkoCoordinator(hass, entry, build_client(hass, entry, app))
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
     options_at_setup = dict(entry.options)

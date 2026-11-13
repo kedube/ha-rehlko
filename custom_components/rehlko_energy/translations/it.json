@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Accedi a Rehlko Energy Management",
-        "description": "Usa l'e-mail e la password che utilizzi nell'app Energy Mgmt. (in precedenza KOHLER Energy Management). Le credenziali dell'app riportate di seguito identificano l'app presso il servizio di accesso di Rehlko; consulta la documentazione dell'integrazione per sapere dove trovarle.",
+        "description": "Usa l'e-mail e la password che utilizzi nell'app Energy Mgmt. (in precedenza KOHLER Energy Management).",
         "data": {
           "username": "E-mail",
           "password": "Password"
@@ -11,22 +11,20 @@
         "data_description": {
           "username": "L'indirizzo e-mail del tuo account Rehlko / Kohler Energy Management.",
           "password": "Viene memorizzata in Home Assistant in modo che l'integrazione possa accedere di nuovo quando la sessione scade."
+        }
+      },
+      "app_credentials": {
+        "title": "Credenziali dell'app",
+        "description": "Il servizio di Rehlko non ha accettato le credenziali dell'app incluse in questa integrazione, quindi inserisci qui quelle attuali dell'app. Identificano l'app, non il tuo account; la documentazione dell'integrazione spiega dove trovarle.",
+        "data": {
+          "client_id": "ID client OAuth",
+          "client_secret": "Segreto client OAuth",
+          "api_key": "Chiave API"
         },
-        "sections": {
-          "app_credentials": {
-            "name": "Credenziali dell'app",
-            "description": "L'ID client OAuth, il segreto client e la chiave API presenti nella configurazione dell'app Energy Mgmt.",
-            "data": {
-              "client_id": "ID client OAuth",
-              "client_secret": "Segreto client OAuth",
-              "api_key": "Chiave API"
-            },
-            "data_description": {
-              "client_id": "CLIENT_ID nel file di configurazione dell'app.",
-              "client_secret": "CLIENT_SECRET nel file di configurazione dell'app.",
-              "api_key": "API_KEY nel file di configurazione dell'app."
-            }
-          }
+        "data_description": {
+          "client_id": "CLIENT_ID nel file di configurazione dell'app.",
+          "client_secret": "CLIENT_SECRET nel file di configurazione dell'app.",
+          "api_key": "API_KEY nel file di configurazione dell'app."
         }
       },
       "reauth_confirm": {
@@ -51,7 +49,7 @@
         "sections": {
           "app_credentials": {
             "name": "Credenziali dell'app",
-            "description": "L'ID client OAuth, il segreto client e la chiave API presenti nella configurazione dell'app Energy Mgmt.",
+            "description": "Necessario solo se le credenziali dell'app incluse nell'integrazione smettono di funzionare. Lascia vuoti tutti e tre i campi per usare quelle incluse.",
             "data": {
               "client_id": "ID client OAuth",
               "client_secret": "Segreto client OAuth",
@@ -70,6 +68,7 @@
       "invalid_auth": "L'e-mail o la password non sono state accettate.",
       "sign_in_denied": "Il servizio di accesso di Rehlko ha rifiutato l'accesso con password per questo account. Succede quando l'account richiede l'autenticazione a più fattori, che questa integrazione non può completare.",
       "invalid_app_credentials": "Il servizio di accesso ha rifiutato l'ID client o il segreto client dell'app.",
+      "incomplete_app_credentials": "Inserisci tutte e tre le credenziali dell'app, oppure lasciale tutte e tre vuote per usare quelle incluse.",
       "invalid_api_key": "Accesso eseguito, ma l'API ha rifiutato la richiesta; controlla la chiave API.",
       "cannot_connect": "Impossibile raggiungere il servizio Rehlko.",
       "no_generators": "Accesso eseguito, ma questo account non ha generatori.",
@@ -736,8 +735,8 @@
         "state_attributes": {
           "release_summary": {
             "state": {
-              "released": "Rilasciato il {date}.",
-              "scheduled": "Installazione pianificata per il {date}.",
+              "released": "Rilasciato",
+              "scheduled": "Installazione pianificata",
               "auto_update_off": "Gli aggiornamenti firmware automatici sono disattivati per questo generatore."
             }
           }

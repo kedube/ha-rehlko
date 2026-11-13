@@ -37,6 +37,13 @@ from .api import (
     RehlkoConnectionError,
     RehlkoError,
 )
+from .app_credentials import (
+    STORED_KEYS,
+    app_credentials_for,
+    builtin_app_credentials,
+    stored_app_credentials,
+    without_app_credentials,
+)
 from .const import (
     API_BASE_URLS,
     CONF_ACCOUNT_ID,
@@ -69,32 +76,25 @@ _LOGGER = logging.getLogger(__name__)
 
 _PASSWORD = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
 SIGN_IN_DENIED = frozenset({"mfa_required", "access_denied", "interaction_required"})
+# Errors that are about the app's credentials, not the account's.
+APP_CREDENTIAL_ERRORS = frozenset({"invalid_app_credentials", "invalid_api_key"})
 
 
-def _app_section(
-    defaults: Mapping[str, Any] | None = None, *, collapsed: bool = False, stored: bool = False
-) -> section:
-    """The app-credentials section.
+def _app_fields(
+    client_id: str | None = None, *, required: bool = True
+) -> dict[vol.Marker, TextSelector]:
+    """The three app-credential fields.
 
-    With `stored`, the entry already holds a secret and an API key: those two fields may be
-    left empty to keep them, and the stored values are never sent back to the browser.
+    Only a client ID is ever filled in for the user. A saved secret and API key stay on the
+    server: they are never sent back to the browser.
     """
-    d = defaults or {}
-    secret = vol.Optional if stored else vol.Required
-    return section(
-        vol.Schema(
-            {
-                vol.Required(
-                    CONF_CLIENT_ID, default=d.get(CONF_CLIENT_ID, vol.UNDEFINED)
-                ): TextSelector(),
-                secret(
-                    CONF_CLIENT_SECRET, default=d.get(CONF_CLIENT_SECRET, vol.UNDEFINED)
-                ): _PASSWORD,
-                secret(CONF_API_KEY, default=d.get(CONF_API_KEY, vol.UNDEFINED)): _PASSWORD,
-            }
-        ),
-        {"collapsed": collapsed},
-    )
+    marker = vol.Required if required else vol.Optional
+    shown = {"suggested_value": client_id} if client_id else None
+    return {
+        marker(CONF_CLIENT_ID, description=shown): TextSelector(),
+        marker(CONF_CLIENT_SECRET): _PASSWORD,
+        marker(CONF_API_KEY): _PASSWORD,
+    }
 
 
 def _user_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
@@ -107,7 +107,6 @@ def _user_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
             vol.Required(CONF_PASSWORD): TextSelector(
                 TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
             ),
-            vol.Required(SECTION_APP_CREDENTIALS): _app_section(d.get(SECTION_APP_CREDENTIALS)),
         }
     )
 
@@ -158,20 +157,29 @@ async def async_validate(
 
 
 def _app_credentials(
-    section_input: Mapping[str, str], stored: Mapping[str, Any] | None = None
+    typed: Mapping[str, str], stored: Mapping[str, Any] | None = None
 ) -> AppCredentials:
     """The app credentials as typed, without the quotes the app's `.env` wraps them in.
 
-    A field left empty keeps the value from `stored` (the entry being reconfigured).
+    A field left empty keeps the value from `stored` (the entry being reconfigured), and is an
+    empty string if there is none.
     """
 
     def clean(key: str) -> str:
-        value = (section_input.get(key) or "").strip()
+        value = (typed.get(key) or "").strip()
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
             value = value[1:-1].strip()
         return value or str((stored or {}).get(key) or "")
 
     return AppCredentials(clean(CONF_CLIENT_ID), clean(CONF_CLIENT_SECRET), clean(CONF_API_KEY))
+
+
+def _complete(app: AppCredentials) -> bool:
+    return bool(app.client_id and app.client_secret and app.api_key)
+
+
+def _as_data(app: AppCredentials) -> dict[str, str]:
+    return dict(zip(STORED_KEYS, (app.client_id, app.client_secret, app.api_key), strict=True))
 
 
 def _error_key(err: Exception) -> str:
@@ -218,30 +226,70 @@ class RehlkoConfigFlow(ConfigFlow, domain=DOMAIN):
             return None
         return result
 
+    def __init__(self) -> None:
+        # The account typed on the sign-in form, kept while the app credentials are asked for,
+        # and a set of app credentials entered by hand that the sign-in service accepted.
+        self._login: dict[str, str] = {}
+        self._app: AppCredentials | None = None
+
+    async def _async_create(self, result: ValidationResult) -> ConfigFlowResult:
+        await self.async_set_unique_id(result.account_id)
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(
+            title=self._login[CONF_USERNAME],
+            data={
+                **self._login,
+                # Only a set entered by hand is saved; the built-in one is read when needed.
+                **(_as_data(self._app) if self._app else {}),
+                CONF_REFRESH_TOKEN: result.refresh_token,
+                CONF_BASE_URL: result.base_url,
+                CONF_ACCOUNT_ID: result.account_id,
+            },
+        )
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
-            username = user_input[CONF_USERNAME].strip()
-            app = _app_credentials(user_input[SECTION_APP_CREDENTIALS])
-            result = await self._async_try(username, user_input[CONF_PASSWORD], app, errors)
+            self._login = {
+                CONF_USERNAME: user_input[CONF_USERNAME].strip(),
+                CONF_PASSWORD: user_input[CONF_PASSWORD],
+            }
+            app = self._app or builtin_app_credentials()
+            result = await self._async_try(
+                self._login[CONF_USERNAME], self._login[CONF_PASSWORD], app, errors
+            )
             if result is not None:
-                await self.async_set_unique_id(result.account_id)
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(
-                    title=username,
-                    data={
-                        CONF_USERNAME: username,
-                        CONF_PASSWORD: user_input[CONF_PASSWORD],
-                        CONF_CLIENT_ID: app.client_id,
-                        CONF_CLIENT_SECRET: app.client_secret,
-                        CONF_API_KEY: app.api_key,
-                        CONF_REFRESH_TOKEN: result.refresh_token,
-                        CONF_BASE_URL: result.base_url,
-                        CONF_ACCOUNT_ID: result.account_id,
-                    },
-                )
+                return await self._async_create(result)
+            if errors["base"] in APP_CREDENTIAL_ERRORS:
+                # Rehlko no longer accepts this set: ask for the app's current one.
+                self._app = None
+                return await self.async_step_app_credentials()
         return self.async_show_form(
             step_id="user", data_schema=_user_schema(user_input), errors=errors
+        )
+
+    async def async_step_app_credentials(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for the app's credentials: Rehlko refused the built-in ones."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            app = _app_credentials(user_input)
+            result = await self._async_try(
+                self._login[CONF_USERNAME], self._login[CONF_PASSWORD], app, errors
+            )
+            if result is not None:
+                self._app = app
+                return await self._async_create(result)
+            if errors["base"] in ("invalid_auth", "sign_in_denied"):
+                # The service accepted the app and refused the account: back to the sign-in
+                # form, keeping what was typed here.
+                self._app = app
+                return self.async_show_form(
+                    step_id="user", data_schema=_user_schema(self._login), errors=errors
+                )
+        return self.async_show_form(
+            step_id="app_credentials", data_schema=vol.Schema(_app_fields()), errors=errors
         )
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
@@ -253,11 +301,11 @@ class RehlkoConfigFlow(ConfigFlow, domain=DOMAIN):
         entry = self._get_reauth_entry()
         errors: dict[str, str] = {}
         if user_input is not None:
-            app = AppCredentials(
-                entry.data[CONF_CLIENT_ID], entry.data[CONF_CLIENT_SECRET], entry.data[CONF_API_KEY]
-            )
             result = await self._async_try(
-                entry.data[CONF_USERNAME], user_input[CONF_PASSWORD], app, errors
+                entry.data[CONF_USERNAME],
+                user_input[CONF_PASSWORD],
+                app_credentials_for(entry.data),
+                errors,
             )
             if result is not None:
                 await self.async_set_unique_id(result.account_id)
@@ -280,35 +328,51 @@ class RehlkoConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Change the password or the app credentials (for example after an app update)."""
+        """Change the password, or enter app credentials of the entry's own.
+
+        The app-credential fields are for the day the built-in set stops working. Typing in
+        any of them gives the entry its own set, completed from the one it already has;
+        leaving all three empty goes back to the built-in set.
+        """
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
+        builtin = builtin_app_credentials()
+        saved = stored_app_credentials(entry.data)
         if user_input is not None:
-            app = _app_credentials(user_input[SECTION_APP_CREDENTIALS], entry.data)
-            result = await self._async_try(
-                entry.data[CONF_USERNAME], user_input[CONF_PASSWORD], app, errors
-            )
+            typed = user_input.get(SECTION_APP_CREDENTIALS) or {}
+            own = None
+            if any((typed.get(key) or "").strip() for key in STORED_KEYS):
+                own = _app_credentials(typed, entry.data if saved else None)
+            app = own or builtin
+            result = None
+            if not _complete(app):
+                errors["base"] = "incomplete_app_credentials"
+            else:
+                result = await self._async_try(
+                    entry.data[CONF_USERNAME], user_input[CONF_PASSWORD], app, errors
+                )
             if result is not None:
                 await self.async_set_unique_id(result.account_id)
                 self._abort_if_unique_id_mismatch(reason="wrong_account")
                 return self.async_update_reload_and_abort(
                     entry,
-                    data_updates={
+                    data={
+                        **without_app_credentials(entry.data),
+                        # A copy of the built-in set is not worth saving.
+                        **(_as_data(own) if own and own != builtin else {}),
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
-                        CONF_CLIENT_ID: app.client_id,
-                        CONF_CLIENT_SECRET: app.client_secret,
-                        CONF_API_KEY: app.api_key,
                         CONF_REFRESH_TOKEN: result.refresh_token,
                         CONF_BASE_URL: result.base_url,
                     },
                 )
-        # Only the client ID is shown. The stored secret and API key stay on the server:
-        # leaving those fields empty keeps them.
+        # The section is open only when the entry has a set of its own. That set's client ID is
+        # filled in, so it can be seen, changed or cleared.
+        fields = _app_fields(saved.client_id if saved else None, required=False)
         schema = vol.Schema(
             {
                 vol.Required(CONF_PASSWORD): _PASSWORD,
-                vol.Required(SECTION_APP_CREDENTIALS): _app_section(
-                    {CONF_CLIENT_ID: entry.data.get(CONF_CLIENT_ID)}, stored=True
+                vol.Required(SECTION_APP_CREDENTIALS): section(
+                    vol.Schema(fields), {"collapsed": saved is None}
                 ),
             }
         )
