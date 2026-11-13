@@ -161,7 +161,7 @@ SENSORS: tuple[RehlkoSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=M,
-        value_fn=_num("generatorLoadW"),
+        value_fn=lambda g: g.load_watts,
         exists_fn=_has_detail("generatorLoadW"),
         covers=("generatorLoadW",),
     ),
@@ -170,7 +170,7 @@ SENSORS: tuple[RehlkoSensorDescription, ...] = (
         translation_key="generator_load_percent",
         native_unit_of_measurement=PERCENTAGE,
         state_class=M,
-        value_fn=_num("generatorLoadPercent"),
+        value_fn=lambda g: g.load_percent,
         exists_fn=_has_detail("generatorLoadPercent"),
         covers=("generatorLoadPercent",),
     ),
@@ -594,7 +594,7 @@ SENSORS: tuple[RehlkoSensorDescription, ...] = (
         translation_key="mac_address",
         entity_category=DIAG,
         entity_registry_enabled_default=False,
-        value_fn=_device("macAddress"),
+        value_fn=lambda g: g.mac_address,
         exists_fn=_has_device("macAddress"),
         covers=("macAddress",),
     ),
@@ -988,11 +988,11 @@ class EnergyProducedSensor(RehlkoEntity, RestoreSensor):
 
     def _integrate(self) -> None:
         gen = self.gen
-        watts = as_float(gen.details.get("generatorLoadW")) if gen else None
+        watts = gen.load_watts if gen else None
         if gen is None or not gen.details_available or gen.details_updated is None or watts is None:
             self._sample = None  # a gap in the readings is not bridged
             return
-        watts = max(watts, 0.0) if gen.is_running else 0.0
+        watts = watts if gen.is_running else 0.0
         when = gen.details_updated
         if self._sample is not None:
             then, before = self._sample

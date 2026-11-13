@@ -8,9 +8,11 @@ import pytest
 
 from custom_components.rehlko_energy.api import vocabulary as V
 from custom_components.rehlko_energy.api.util import (
+    device_mac,
     format_timestamp,
     has_offset,
     humanize,
+    magnitude,
     parse_timestamp,
     plain_ip,
     slugify,
@@ -86,6 +88,35 @@ def test_format_timestamp_mirrors_source_form() -> None:
 )
 def test_plain_ip_takes_the_address_out_of_a_socket(reported, address) -> None:
     assert plain_ip(reported) == address
+
+
+@pytest.mark.parametrize(
+    ("reported", "address"),
+    [
+        # The service sends the bytes back to front; Home Assistant's own integration turns
+        # them round too (its test fixture is the first of these).
+        ("91:E1:20:63:10:00", "00:10:63:20:E1:91"),
+        ("aa-bb-cc-dd-ee-ff", "ff:ee:dd:cc:bb:aa"),
+        (" 01:02:03:04:05:06 ", "06:05:04:03:02:01"),
+        # Not six bytes: shown as reported.
+        ("0102.0304.0506", "0102.0304.0506"),
+        ("01:02:03:04:05", "01:02:03:04:05"),
+        ("zz:02:03:04:05:06", "zz:02:03:04:05:06"),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_device_mac_is_put_in_network_order(reported, address) -> None:
+    assert device_mac(reported) == address
+
+
+def test_magnitude_drops_the_sign_and_keeps_missing_readings_missing() -> None:
+    assert magnitude(-5400) == 5400
+    assert magnitude("-12.5") == 12.5
+    assert magnitude(0) == 0
+    assert magnitude(None) is None
+    assert magnitude("n/a") is None
+    assert magnitude(True) is None
 
 
 def test_vocabulary_shapes() -> None:

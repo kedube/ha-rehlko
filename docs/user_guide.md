@@ -2,6 +2,10 @@
 
 Everything the integration creates, and how to use it.
 
+If you are coming from the **Rehlko** integration that ships with Home Assistant, read
+[Moving from the built-in integration](migrating_from_core.md) first: it lists the entity IDs
+and state values that change.
+
 ## Devices
 
 For each generator on your account you get:
@@ -86,7 +90,9 @@ from; the service reports nothing else about the network. It is not the generato
 on your own network (`192.168.x.x` or similar), which only your router knows, and it need not
 be your public address either: one between `100.64.0.0` and `100.127.255.255` is a private
 address inside a carrier's or the service's own network. To find the generator on your
-network, look up its **MAC address** in your router's list of devices.
+network, look up its **MAC address** in your router's list of devices. The sensor (disabled
+until you enable it) and the panel's Diagnostics tab show it the way your network does; the
+service itself reports the six bytes in reverse order.
 
 **Energy produced** (kWh) can be added to the Energy dashboard. Rehlko's service reports the
 generator's load in watts, not energy, so the integration adds the load up between polls and

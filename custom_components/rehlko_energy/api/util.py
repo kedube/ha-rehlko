@@ -173,3 +173,28 @@ def plain_ip(value: Any) -> str | None:
         return text
     mapped = getattr(address, "ipv4_mapped", None)
     return str(address if mapped is None else mapped)
+
+
+_MAC_BYTE = re.compile(r"[0-9A-Fa-f]{2}")
+
+
+def device_mac(value: Any) -> str | None:
+    """The MAC address a device has on its network.
+
+    The service sends the six bytes in reverse order: `91:E1:20:63:10:00` for a device whose
+    address is `00:10:63:20:E1:91`. Home Assistant's own Rehlko integration turns them round
+    in the same way. Anything that is not six bytes is returned as it is.
+    """
+    text = str(value).strip() if value is not None else ""
+    if not text:
+        return None
+    parts = re.split(r"[:-]", text)
+    if len(parts) != 6 or not all(_MAC_BYTE.fullmatch(part) for part in parts):
+        return text
+    return ":".join(reversed(parts))
+
+
+def magnitude(value: Any) -> float | None:
+    """A reading's size, for one whose sign carries no meaning (see `GeneratorData.load_watts`)."""
+    number = as_float(value)
+    return None if number is None else abs(number)

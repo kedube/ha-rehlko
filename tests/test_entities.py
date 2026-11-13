@@ -34,7 +34,7 @@ SAMPLE_DEVICE: dict[str, Any] = {
     "isConnected": True,
     "connectionType": "KohlerWifi",
     "deviceIpAddress": "[::ffff:10.0.0.5]:42636",  # as reported: the socket, not the address
-    "macAddress": "aa:bb:cc:dd:ee:ff",
+    "macAddress": "ff:ee:dd:cc:bb:aa",  # as reported: back to front
     "lastConnectedTimestamp": "2026-11-12T20:00:00Z",
     "statusUpdateTimestamp": "2026-11-12T20:01:00Z",
     "latestParameterUpdateTimestamp": "2026-11-12T19:00:00Z",
@@ -252,6 +252,11 @@ def test_key_sensor_values(sample_gen: GeneratorData) -> None:
 
     assert value("battery_voltage") == 13.6
     assert value("generator_load") == 5400
+    assert value("mac_address") == "aa:bb:cc:dd:ee:ff"  # in the order the network sees it
+    # A controller that reports its load below zero means the same load.
+    sample_gen.details.update(generatorLoadW=-5400, generatorLoadPercent=-27)
+    assert value("generator_load") == 5400
+    assert value("generator_load_percent") == 27
     assert value("engine_state") == "running"  # enum -> slug
     assert value("status") == "running"
     assert value("total_runtime") == 182.4
@@ -392,6 +397,17 @@ def test_energy_is_the_load_added_up_between_polls(sample_gen: GeneratorData) ->
     assert poll(150 + 3630, None) == pytest.approx(0.1125)
     assert sensor.device_class == "energy"
     assert sensor.state_class == "total_increasing"
+
+
+def test_energy_counts_a_load_reported_below_zero(sample_gen: GeneratorData) -> None:
+    """Some controllers report the load negative; it is still energy produced."""
+    sensor = sensor_mod.EnergyProducedSensor(FakeCoordinator(sample_gen), 1)
+    start = datetime(2026, 11, 13, 12, 0, tzinfo=UTC)
+    for seconds in (0, 30):
+        sample_gen.details_updated = start + timedelta(seconds=seconds)
+        sample_gen.details["generatorLoadW"] = -6000
+        sensor._integrate()
+    assert sensor.native_value == pytest.approx(0.05)  # 6 kW for 30 s
 
 
 def test_energy_counts_nothing_while_the_engine_is_stopped(sample_gen: GeneratorData) -> None:

@@ -3305,7 +3305,7 @@ var $ = class extends P {
     </div>`;
 	}
 	renderStats(e) {
-		let t = this.t, n = this.fmt, r = e.details, i = St(r.engineOilPressurePsi, n), a = xt(r.engineCoolantTempF, n), o = e.derived.is_running ? Ct(r.generatorLoadW, n) : null, s = this.label(X.engine, r.engineState), c = [
+		let t = this.t, n = this.fmt, r = e.details, i = St(r.engineOilPressurePsi, n), a = xt(r.engineCoolantTempF, n), o = e.derived.is_running ? Ct(e.derived.load_w, n) : null, s = this.label(X.engine, r.engineState), c = [
 			[
 				"stat.load",
 				o?.text,
@@ -3641,7 +3641,7 @@ var $ = class extends P {
 		}, a = e.details.autoFirmwareUpdateEnabled, o = [
 			[t("diagnostics.connected"), e.derived.is_connected ? t("common.yes") : t("common.no")],
 			[t("diagnostics.device_ip"), e.derived.ip_address],
-			[t("diagnostics.mac"), e.device.macAddress],
+			[t("diagnostics.mac"), e.derived.mac_address],
 			[t("diagnostics.uptime"), i(e.device.uptimePercent)],
 			[t("diagnostics.last_connected"), W(e.device.lastConnectedTimestamp, n)],
 			[t("diagnostics.parameters_updated"), G(e.device.latestParameterUpdateTimestamp, n)],

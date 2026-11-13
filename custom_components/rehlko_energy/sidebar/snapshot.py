@@ -33,6 +33,8 @@ def _derived(gen: GeneratorData) -> dict[str, Any]:
         "supports_exercise_scheduling": gen.supports_exercise_scheduling,
         "supports_next_exercise_datetime": gen.supports_next_exercise_datetime,
         "ip_address": gen.ip_address,
+        "mac_address": gen.mac_address,
+        "load_w": gen.load_watts,
     }
 
 

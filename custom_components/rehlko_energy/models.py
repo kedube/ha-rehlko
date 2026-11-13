@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from .api.util import as_float, first, plain_ip
+from .api.util import as_float, device_mac, first, magnitude, plain_ip
 from .const import DEFAULT_NOMINAL_VOLTAGE, UTILITY_PRESENT_FRACTION
 
 # Genset (engine) states in which the engine is turning.
@@ -146,6 +146,25 @@ class GeneratorData:
         Not the controller's address on its own network, which the service does not report.
         """
         return plain_ip(self.device.get("deviceIpAddress"))
+
+    @property
+    def mac_address(self) -> str | None:
+        """The controller's MAC address, in the order its network sees it."""
+        return device_mac(self.device.get("macAddress"))
+
+    @property
+    def load_watts(self) -> float | None:
+        """The load on the generator.
+
+        Some controllers report it below zero. Home Assistant's own Rehlko integration takes
+        the size of the number, and so does this one.
+        """
+        return magnitude(self.details.get("generatorLoadW"))
+
+    @property
+    def load_percent(self) -> float | None:
+        """The load as a share of the rated output; see `load_watts` for its sign."""
+        return magnitude(self.details.get("generatorLoadPercent"))
 
     # ------------------------------------------------------------- derived state
     @property

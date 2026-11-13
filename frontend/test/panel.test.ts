@@ -418,7 +418,8 @@ describe("language and units", () => {
 
   it("reports the generator's load only while it is running", async () => {
     const generator = sampleGenerator();
-    generator.details.generatorLoadW = 5400;
+    generator.details.generatorLoadW = -5400;
+    generator.derived.load_w = 5400;
     const { panel, send } = setup(sampleSnapshot([generator]));
     document.body.append(panel);
     await settle(panel);

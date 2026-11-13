@@ -45,6 +45,8 @@ async def test_setup_reload_unload(hass, entry, client, enable_custom_integratio
         assert snapshot["generators"][0]["entities"]["sensor.battery_voltage"]
         # The panel gets the controller's address as an address; the payload stays as sent.
         assert snapshot["generators"][0]["derived"]["ip_address"] == "10.0.0.5"
+        assert snapshot["generators"][0]["derived"]["mac_address"] == "aa:bb:cc:dd:ee:ff"
+        assert snapshot["generators"][0]["derived"]["load_w"] == 5400
         assert (
             snapshot["generators"][0]["device"]["deviceIpAddress"]
             == SAMPLE_DEVICE["deviceIpAddress"]

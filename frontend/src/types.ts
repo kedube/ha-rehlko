@@ -82,6 +82,10 @@ export interface Derived {
   /** `device.deviceIpAddress` as an address: the service reports the socket it saw the controller
    *  connect from, `[::ffff:a.b.c.d]:port`. Not the controller's address on its own network. */
   ip_address: string | null;
+  /** `device.macAddress` in the order the network sees it; the service sends it reversed. */
+  mac_address: string | null;
+  /** `details.generatorLoadW` without its sign, which some controllers report negative. */
+  load_w: number | null;
 }
 
 export interface Generator {

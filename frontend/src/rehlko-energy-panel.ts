@@ -411,7 +411,7 @@ export class RehlkoEnergyPanel extends LitElement {
     const det = gen.details;
     const oil = pressure(det["engineOilPressurePsi"], f);
     const coolant = temperature(det["engineCoolantTempF"], f);
-    const load = gen.derived.is_running ? power(det["generatorLoadW"], f) : null;
+    const load = gen.derived.is_running ? power(gen.derived.load_w, f) : null;
     const engine = this.label(ENUM.engine, det["engineState"]);
     const stats: Array<[MessageKey, string | null | undefined, string?]> = [
       ["stat.load", load?.text, load?.unit],
@@ -801,7 +801,7 @@ export class RehlkoEnergyPanel extends LitElement {
     const rows: Array<[string, unknown]> = [
       [t("diagnostics.connected"), gen.derived.is_connected ? t("common.yes") : t("common.no")],
       [t("diagnostics.device_ip"), gen.derived.ip_address],
-      [t("diagnostics.mac"), gen.device["macAddress"]],
+      [t("diagnostics.mac"), gen.derived.mac_address],
       [t("diagnostics.uptime"), percent(gen.device["uptimePercent"])],
       [t("diagnostics.last_connected"), fmtDateTime(gen.device["lastConnectedTimestamp"], f)],
       [t("diagnostics.parameters_updated"), fmtRelative(gen.device["latestParameterUpdateTimestamp"], f)],

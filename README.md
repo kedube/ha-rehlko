@@ -20,7 +20,8 @@ control, event and alert notifications, activity logs, maintenance history, and 
 
 [Features](#features) · [What you need](#what-you-need) · [Install](#install) ·
 [Set up](#set-up) · [Options](#options) · [Automating](#automating) ·
-[How it works](#how-it-works) · [Development](#development) · [User guide](docs/user_guide.md)
+[How it works](#how-it-works) · [Development](#development) · [User guide](docs/user_guide.md) ·
+[Coming from the built-in integration](docs/migrating_from_core.md)
 
 ## Features
 
@@ -61,6 +62,10 @@ control, event and alert notifications, activity logs, maintenance history, and 
 - Home Assistant **2026.2** or newer.
 - A Rehlko / Kohler Energy Management account (the email and password you use in the app) with
   at least one generator.
+
+Already using the **Rehlko** integration that ships with Home Assistant?
+[Moving from the built-in integration](docs/migrating_from_core.md) lists what differs and
+what to change, starting with removing that one first so entities keep their IDs.
 
 Nothing has to be copied out of the app. Its own OAuth client and API key, which identify the
 app (not your account) and are the same for every install, are built into the integration.

@@ -232,6 +232,14 @@ network, which no payload carries, and it can be a private hop on the way in rat
 site's public address: the example above is in 100.64.0.0/10, the range carriers and cloud
 networks use internally.
 
+Two more fields are not what they seem, and are corrected where they are shown (as
+`aiokem`, the library behind Home Assistant's own Rehlko integration, corrects them):
+
+- `macAddress` has its six bytes in reverse order: `91:E1:20:63:10:00` for a controller whose
+  address on the network is `00:10:63:20:E1:91`.
+- `generatorLoadW` and `generatorLoadPercent` are below zero on some controllers. The sign
+  carries no meaning; the load is the size of the number.
+
 **Device details** (`/devices/{id}`): the summary under `device`, plus `generators[],
 powerSource, switchState, coolingType, connectionType, serverIpAddress, serviceAgreement,
 exercise, lastRanTimestamp, totalRuntimeHours, totalOperationHours,

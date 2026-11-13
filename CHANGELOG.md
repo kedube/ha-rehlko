@@ -5,6 +5,20 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+### Added
+
+- [Moving from Home Assistant's built-in Rehlko integration](docs/migrating_from_core.md): how
+  the two differ, which entity IDs and state values change, and the order to switch in.
+
+### Fixed
+
+- The **MAC address** sensor and the panel's Diagnostics tab show the address as your network
+  does. The service reports its six bytes in reverse order, and that is what was shown.
+- A load that the controller reports below zero is read as that load. **Generator load** and
+  **Generator load (of rated)** showed the negative number, the panel did too, and **Energy
+  produced** counted nothing for such a generator. Home Assistant's built-in Rehlko
+  integration makes both corrections; they were found while comparing the two.
+
 ## [1.03] - 2026-11-13
 
 ### Changed

@@ -77,7 +77,7 @@ function demoGenerator(state: string, model: string) {
     serviceAgreementStatus: "Active", connectionType: "KohlerWifi", uptimePercent: 99,
     lastConnectedTimestamp: ago(1), latestParameterUpdateTimestamp: ago(12),
     lastMaintenanceTimestamp: ago(60 * 24 * 150), nextMaintenanceTimestamp: new Date(Date.now() + 864e5 * 215).toISOString(),
-    maintenancePeriodDays: 365, deviceIpAddress: "[::ffff:192.0.2.25]:42636", macAddress: "02:00:00:00:00:01",
+    maintenancePeriodDays: 365, deviceIpAddress: "[::ffff:192.0.2.25]:42636", macAddress: "01:00:00:00:00:02",
     address: { address1: "1 Example Way", city: "Springfield", postalCode: "00000" },
     dealerOrgs: [{ name: "Example Power Systems", displayPhoneNumber: "(555) 010-0000" }],
   });
@@ -114,13 +114,14 @@ function demoGenerator(state: string, model: string) {
   generator.entities = Object.fromEntries(Array.from({ length: 64 }, (_, i) => [`sensor.demo_${i}`, `sensor.demo_${i}`]));
   generator.feeds_updated = ago(1);
   generator.derived.ip_address = "192.0.2.25";
+  generator.derived.mac_address = "02:00:00:00:00:01";
 
   if (state === "Running" || state === "Exercising") {
     const exercising = state === "Exercising";
     Object.assign(generator.device, { status: exercising ? "RunningExercise" : "Running" });
     Object.assign(generator.derived, {
       is_running: true, ready_to_run: false, is_exercising: exercising,
-      utility_present: exercising, on_generator_power: !exercising,
+      utility_present: exercising, on_generator_power: !exercising, load_w: exercising ? 0 : 5400,
     });
     Object.assign(generator.details, {
       engineSpeedRpm: 3600, generatorLoadW: exercising ? 0 : 5400, engineFrequencyHz: 60,
