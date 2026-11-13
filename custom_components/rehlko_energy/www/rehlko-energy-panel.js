@@ -630,7 +630,9 @@ var L = {
     --rk-fg: var(--primary-text-color, #1a1a1a);
     --rk-muted: var(--secondary-text-color, #5f666d);
     --rk-divider: var(--divider-color, #e0e0e0);
-    --rk-accent: var(--rehlko-accent-color, #1f8a4c);
+    /* Rehlko's blue, the one its buttons use on kohlerhomeenergy.rehlko.com. A theme can
+       set --rehlko-accent-color to change it. */
+    --rk-accent: var(--rehlko-accent-color, #336ee5);
     --rk-ok: var(--success-color, #1f8a4c);
     --rk-warn: var(--warning-color, #c98a00);
     --rk-bad: var(--error-color, #c0392b);
@@ -770,7 +772,8 @@ var L = {
   }
   .status-chip.live .status-dot { animation: pulse 1.6s ease-in-out infinite; }
 
-  /* Utility ── Home ── Generator: the wire from whichever source feeds the home is lit. */
+  /* Utility ── Home ── Generator: the wire from whichever source feeds the home is lit, in
+     the one accent colour. The labels say which source it is. */
   .flow {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(14px, 44px) minmax(0, 1fr) minmax(14px, 44px) minmax(0, 1fr);
@@ -793,8 +796,7 @@ var L = {
   .node .label, .node .value { max-width: 100%; overflow-wrap: break-word; hyphens: auto; }
   .node .label { font-size: 12px; }
   .node .value { font-size: 15px; font-weight: 600; line-height: 1.25; color: var(--rk-fg); }
-  .node.utility, .wire.utility { --src: var(--rk-util); }
-  .node.generator, .wire.generator { --src: var(--rk-accent); }
+  .node.utility, .wire.utility, .node.generator, .wire.generator { --src: var(--rk-accent); }
   .node.active {
     border-color: var(--src);
     background: color-mix(in srgb, var(--src) 10%, transparent);

@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+### Changed
+
+- The panel's accent colour is Rehlko's blue (`#336EE5`, the one its website's buttons use)
+  instead of green: tabs, buttons, checkboxes and the lit path of the power flow, which is
+  that one colour whichever source feeds the home. Status colours are unchanged and still come
+  from the Home Assistant theme. A theme can set `--rehlko-accent-color` to use another.
+
 ## [1.01] - 2026-11-13
 
 ### Fixed
