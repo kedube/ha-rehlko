@@ -1,5 +1,5 @@
 import { LitElement, html, nothing, type PropertyValues, type TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
 import { live } from "lit/directives/live.js";
 import { mdiRefresh, mdiPlayCircle, mdiStopCircle, mdiClockCheckOutline, mdiAlertOctagon,
@@ -72,7 +72,6 @@ function generatorKey(gen: Generator): string {
   return `${gen.entry_id}:${gen.device_id}`;
 }
 
-@customElement("rehlko-energy-panel")
 export class RehlkoEnergyPanel extends LitElement {
   static override styles = panelStyles;
 
@@ -1062,4 +1061,11 @@ declare global {
   interface HTMLElementTagNameMap {
     "rehlko-energy-panel": RehlkoEnergyPanel;
   }
+}
+
+// Registered by hand, not with Lit's @customElement, which defines the element without
+// checking: a second copy of this script on the page (a cached one next to a new one after an
+// update, say) would throw on the name already being taken.
+if (!customElements.get("rehlko-energy-panel")) {
+  customElements.define("rehlko-energy-panel", RehlkoEnergyPanel);
 }

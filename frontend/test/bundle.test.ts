@@ -1,6 +1,6 @@
 // Load the file that ships in the integration, independently of the TypeScript source.
 import "../../custom_components/rehlko_energy/www/rehlko-energy-panel.js";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import type { HomeAssistant } from "../src/types";
 import { sampleSnapshot } from "./fixtures";
 
@@ -31,4 +31,15 @@ it("the production bundle defines and renders a working custom panel", async () 
   expect(image.height).toBe(626);
   panel.remove();
   expect(unsubscribed).toBe(true);
+});
+
+it("loading the bundle a second time leaves the registered panel in place", async () => {
+  // Two copies of the script can reach one page, a cached one and a new one after an update.
+  // Defining the element again throws, so the second copy would fail to load.
+  const registered = customElements.get("rehlko-energy-panel");
+  expect(registered).toBeDefined();
+  vi.resetModules();
+  // @ts-expect-error The built file has no type declarations; only loading it matters here.
+  await import("../../custom_components/rehlko_energy/www/rehlko-energy-panel.js");
+  expect(customElements.get("rehlko-energy-panel")).toBe(registered);
 });

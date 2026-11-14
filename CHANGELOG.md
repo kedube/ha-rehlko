@@ -5,6 +5,17 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+### Fixed
+
+- The panel script registers its element only when it is not registered already. A second
+  copy of the script on one page, such as a cached one beside a new one after an update,
+  failed to load with an error.
+
+### Removed
+
+- `docs/REVIEW.md`, a dated record of two early reviews. Its lists of limits no longer matched
+  the integration; the changes it led to are in this file.
+
 ## [1.04] - 2026-11-14
 
 ### Added
