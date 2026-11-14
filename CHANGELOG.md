@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+## [1.04] - 2026-11-14
+
 ### Added
 
 - [Moving from Home Assistant's built-in Rehlko integration](docs/migrating_from_core.md): how
