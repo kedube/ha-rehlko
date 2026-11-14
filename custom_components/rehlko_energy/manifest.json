@@ -10,5 +10,5 @@
   "issue_tracker": "https://github.com/kedube/ha-rehlko/issues",
   "loggers": ["custom_components.rehlko_energy"],
   "requirements": [],
-  "version": "1.04"
+  "version": "1.05"
 }

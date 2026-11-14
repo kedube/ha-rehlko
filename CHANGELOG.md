@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+## [1.05] - 2026-11-14
+
 ### Fixed
 
 - The panel script registers its element only when it is not registered already. A second
