@@ -110,7 +110,22 @@ def client():
         "get_device": SAMPLE_DETAILS,
         "get_events": [],
         "get_alerts": [],
-        "get_notifications": [],
+        # As the service sends one: `tag` carries the account's user number.
+        "get_notifications": [
+            {
+                "id": 7001,
+                "tag": "homeowneruser:acct-Zq7",
+                "type": "EngineStartedNotice",
+                "message": "Lake house (SN123) has started",
+                "timestamp": "2026-01-07T14:30:47.2+00:00",
+                "deviceId": 1,
+                "serialNumber": "SN123",
+                "displayName": "Lake house",
+                "ctaText": None,
+                "ctaLink": None,
+                "isEStopEvent": False,
+            }
+        ],
         "get_maintenance_notes": [{"id": 1, "contents": "Called Pat on 555-0100"}],
         "get_cell_plan": {},
         "get_me": {"id": "acct-Zq7", "email": EMAIL, "firstName": "Pat", "lastName": "Owner"},
@@ -118,7 +133,15 @@ def client():
     }.items():
         setattr(api, name, AsyncMock(return_value=deepcopy(value)))
     api.base_url = "https://api.example"
-    api.auth.claims = {"sub": "acct-Zq7", "email": EMAIL, "iss": "https://auth.example", "exp": 1}
+    # An ID token's claims: `aud` is the app's client ID (`cid` in an access token).
+    api.auth.claims = {
+        "sub": "acct-Zq7",
+        "email": EMAIL,
+        "iss": "https://auth.example",
+        "aud": "client-id",
+        "cid": "client-id",
+        "exp": 1,
+    }
     return api
 
 
@@ -140,7 +163,10 @@ async def test_diagnostics_snapshot_and_logs_hold_no_credentials(
         diagnostics,
         also=(EMAIL, "acct-Zq7", "client-id", "SN123", "1 Example Way", "Pat", "555-0100"),
     )
+    assert "Lake house" not in diagnostics
     assert "batteryVoltageV" in diagnostics  # still useful
+    assert "EngineStartedNotice" in diagnostics
+    assert "https://auth.example" in diagnostics
 
     # The panel is administrators-only, but it has no use for credentials at all.
     assert_no_secrets(json.dumps(build_snapshot(hass), default=str))

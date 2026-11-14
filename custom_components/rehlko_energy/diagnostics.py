@@ -38,6 +38,8 @@ TO_REDACT = {
     "e164PhoneNumber",
     "displayPhoneNumber",
     "userId",
+    # A notification's `tag` is `homeowneruser:` and the account's user number.
+    "tag",
     "dealerAuthor",
     "addedBy",
     "associatedUsers",
@@ -123,13 +125,15 @@ async def async_get_config_entry_diagnostics(
             # Whether the entry signs in with app credentials entered by hand ("stored") or
             # with the ones written into the integration ("built_in").
             "app_credentials": "stored" if stored_app_credentials(entry.data) else "built_in",
+            # `aud` (in an ID token) and `cid` (in an access token) are the app's client ID,
+            # which is redacted in the entry's data above.
             "token_claims": async_redact_data(
                 {
                     k: v
                     for k, v in coordinator.client.auth.claims.items()
                     if k in ("iss", "aud", "scp", "exp", "iat", "cid", "ver")
                 },
-                set(),
+                {"aud", "cid"},
             ),
         },
         "coordinator": {

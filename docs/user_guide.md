@@ -219,8 +219,14 @@ Mirroring the app, the integration refuses an action and raises a clear error wh
   ([API.md](API.md#authentication) says where to find them).
 - **Stale data / offline.** Check the generator's own connectivity; the panel's Diagnostics tab
   shows the last successful refresh.
-- **Diagnostics for a bug report:** the entry's **Download diagnostics** redacts serial numbers,
-  addresses, contacts and tokens.
+- **Diagnostics for a bug report:** the entry's **Download diagnostics** redacts credentials
+  and tokens, your email, name and account number, addresses, serial numbers, the MAC and IP
+  addresses, and free text such as notification messages and the names of your loads. What is
+  left is the generator's readings, model and firmware, its activity log, and Rehlko's record
+  number for the generator. Home Assistant adds a header of its own to every diagnostics
+  file: its version and installation type, your time zone, and the custom integrations you
+  have installed. Delete the `custom_components` section before attaching the file if you
+  would rather not share that list.
 
 - **Panel missing or blank.** Install and configure the integration, sign in as an
   administrator, and enable **Show sidebar panel** in its options. Use `/rehlko-energy`

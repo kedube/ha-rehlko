@@ -18,6 +18,9 @@ All notable changes to this project are documented here. The format follows
   **Generator load (of rated)** showed the negative number, the panel did too, and **Energy
   produced** counted nothing for such a generator. Home Assistant's built-in Rehlko
   integration makes both corrections; they were found while comparing the two.
+- **Download diagnostics** no longer includes the account's Rehlko user number, which was
+  inside the `tag` of every notification, or the app's client ID, which was the sign-in
+  token's `aud` claim.
 
 ## [1.03] - 2026-11-13
 
