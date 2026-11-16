@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+## [1.07] - 2026-11-16
+
 ### Fixed
 
 - An activity‑log entry or notification is announced even when its time is missing, cannot be
