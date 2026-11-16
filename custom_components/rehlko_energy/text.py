@@ -54,8 +54,9 @@ class GeneratorNameText(RehlkoEntity, TextEntity):
 
     @property
     def native_value(self) -> str | None:
-        gen = self.gen
-        return gen.device.get("displayName") if gen else None
+        name = self.gen.device.get("displayName") if self.gen else None
+        # Home Assistant refuses a state outside min..max by raising, mid-update.
+        return name if isinstance(name, str) and 1 <= len(name) <= self.native_max else None
 
     async def async_set_value(self, value: str) -> None:
         name = value.strip()
@@ -77,7 +78,7 @@ class PeripheralText(PeripheralMixin, RehlkoEntity, TextEntity):
     @property
     def native_value(self) -> str | None:
         value = (self._param() or {}).get("value")
-        return value if isinstance(value, str) else None
+        return value if isinstance(value, str) and len(value) <= self.native_max else None
 
     async def async_set_value(self, value: str) -> None:
         await self._write(value)

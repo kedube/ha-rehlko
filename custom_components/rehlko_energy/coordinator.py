@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+import functools
+import hashlib
+import heapq
+import json
 import logging
 import time
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from datetime import datetime, timedelta, tzinfo
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import (
@@ -53,7 +57,14 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-MAX_SEEN = 400  # remembered item ids per feed
+MAX_SEEN = 400  # the newest items of one answer that are compared with what was seen
+# Ids remembered per feed: twice what one answer is compared on, so an item that leaves the
+# answer (newer ones arrived) is still known if it comes back (newer ones were deleted).
+MAX_REMEMBERED = 2 * MAX_SEEN
+SEEN_SAVE_DELAY = 1  # seconds; written before a crash or power cut could repeat announcements
+SEEN_FEEDS = ("events", "alerts", "notifications")
+SEEN_META = "meta"  # beside a generator's id lists: how each feed was last read
+META_FIELDS = ("window", "since")
 # A generator must be missing from this many consecutive successful account reads before its
 # devices are removed, so one odd answer from the service cannot discard anyone's entities.
 STALE_POLLS = 3
@@ -96,79 +107,280 @@ class FeedItem:
     event_type: str
 
 
-def item_key(item: dict[str, Any]) -> str:
-    if item.get("id") is not None:
-        return str(item["id"])
+# What tells apart two items that came without an id. Not fields that may change after the
+# fact: the item would come back as a new one.
+_IDENTIFYING = (
+    "deviceEventId",
+    "deviceEventIntId",
+    "event",
+    "name",
+    "level",
+    "fmi",
+    "parameterId",
+    "tag",
+    "message",
+)
+
+
+def _has_id(item: dict[str, Any]) -> bool:
+    return item.get("id") not in (None, "")
+
+
+def legacy_item_key(item: dict[str, Any]) -> str:
+    """How earlier versions keyed an item without an id: two of a type at one time shared it."""
     return f"{item.get('deviceEventId') or item.get('type')}|{item.get('timestamp')}"
 
 
+def item_key(item: dict[str, Any]) -> str:
+    if _has_id(item):
+        ident = item["id"]
+        # The same number, however the service writes it (7, 7.0).
+        if isinstance(ident, float) and ident.is_integer():
+            ident = int(ident)
+        return str(ident)
+    fields = json.dumps([item.get(name) for name in _IDENTIFYING], default=str)
+    return f"{legacy_item_key(item)}|{hashlib.sha256(fields.encode()).hexdigest()[:12]}"
+
+
+@functools.lru_cache(maxsize=4096)
+def _parsed(text: str, tz: tzinfo) -> float | None:
+    # A feed's items come back at every poll and are ordered more than once in each: each
+    # time is parsed once.
+    ts = parse_timestamp(text, tz)
+    return ts.timestamp() if ts else None
+
+
+def _stamp(item: dict[str, Any]) -> float | None:
+    """When an item happened (POSIX time). A time without an offset is the site's."""
+    value = item.get("timestamp")
+    return _parsed(value, dt_util.get_default_time_zone()) if isinstance(value, str) else None
+
+
 def _sort_key(item: dict[str, Any]) -> float:
-    ts = parse_timestamp(item.get("timestamp"))
-    return ts.timestamp() if ts else 0.0
+    stamp = _stamp(item)
+    return 0.0 if stamp is None else stamp
+
+
+class _Entry(NamedTuple):
+    stamp: float | None
+    key: str
+    item: dict[str, Any]
+
+
+def _order(entry: _Entry) -> tuple[float, str]:
+    # Equal times are ordered by key, so the same items make the cut however the service
+    # orders its answer: otherwise one could drop out, be forgotten, return and be announced.
+    return (0.0 if entry.stamp is None else entry.stamp, entry.key)
+
+
+def _newest(items: list[dict[str, Any]]) -> list[_Entry]:
+    """Each item once (its newest copy), newest first, at most MAX_SEEN of them."""
+    unique: dict[str, _Entry] = {}
+    for item in items:
+        entry = _Entry(_stamp(item), item_key(item), item)
+        kept = unique.get(entry.key)
+        if kept is None or _order(entry) > _order(kept):
+            unique[entry.key] = entry
+    return heapq.nlargest(MAX_SEEN, unique.values(), key=_order)
+
+
+def _remembered(entry: _Entry, known: set[str], legacy: bool) -> bool:
+    if entry.key in known:
+        return True
+    # A feed recorded by an earlier version knows an item without an id by its legacy key.
+    return legacy and not _has_id(entry.item) and legacy_item_key(entry.item) in known
+
+
+def _usable(stored: Any) -> dict[str, dict[str, Any]]:
+    """What can be used of the stored record.
+
+    A malformed part is left out and its feed starts over: its first answer is remembered, not
+    announced. Otherwise it would fail every poll until someone deleted the file.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    damaged = stored is not None and not isinstance(stored, dict)
+    for device_id, bucket in stored.items() if isinstance(stored, dict) else ():
+        if not isinstance(bucket, dict):
+            damaged = True
+            continue
+        clean: dict[str, Any] = {}
+        for feed in SEEN_FEEDS:
+            keys = bucket.get(feed)
+            if isinstance(keys, list) and all(isinstance(k, str) for k in keys):
+                clean[feed] = keys
+            elif feed in bucket:
+                damaged = True
+        meta = bucket.get(SEEN_META, {})
+        if not isinstance(meta, dict):
+            damaged, meta = True, {}
+        clean[SEEN_META] = {}
+        for feed, record in meta.items():
+            if feed not in clean:
+                continue  # nothing to describe (or a feed this version does not read)
+            window = record.get("window", 0) if isinstance(record, dict) else None
+            since = record.get("since") if isinstance(record, dict) else None
+            if type(window) is int and window >= 0 and type(since) in (type(None), int, float):
+                clean[SEEN_META][feed] = {k: v for k, v in record.items() if k in META_FIELDS}
+            else:
+                damaged = True  # the feed is read as one recorded by an earlier version
+        out[device_id] = clean
+    if damaged:
+        _LOGGER.warning(
+            "Part of the stored record of announced activity could not be read and starts "
+            "over; what the affected feeds list at their next read is not announced"
+        )
+    return out
 
 
 class SeenTracker:
-    """Remembers which feed items were already announced, across restarts."""
+    """Remembers which feed items were already announced, across restarts.
+
+    Stored per generator: each feed's remembered ids, newest first, and under `meta` how each
+    feed was last read. Earlier versions read the id lists and ignore `meta`.
+    """
 
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
         self._store: Store[dict[str, Any]] = Store(
             hass, STORAGE_VERSION, f"{STORAGE_KEY_SEEN}.{entry_id}"
         )
-        self._data: dict[str, dict[str, list[str]]] = {}
+        self._data: dict[str, dict[str, Any]] = {}
+        self.closed = False
 
     async def async_load(self) -> None:
-        self._data = await self._store.async_load() or {}
+        self._data = _usable(await self._store.async_load())
 
     async def async_remove(self) -> None:
         await self._store.async_remove()
 
-    async def async_flush(self) -> None:
-        """Write now. A reload within the save delay would otherwise re-announce items."""
+    async def async_close(self) -> None:
+        """Write now, and record nothing more (at unload).
+
+        A reload within the save delay would otherwise announce items again. So would a poll of
+        the unloaded entry still under way (started by an action): the reloaded entry has read
+        the record already, and would announce the same items itself.
+        """
+        self.closed = True
         await self._store.async_save(self._data)
 
     def _save(self) -> None:
-        self._store.async_delay_save(lambda: self._data, 10)
+        if not self.closed:
+            self._store.async_delay_save(lambda: self._data, SEEN_SAVE_DELAY)
 
-    def fresh(self, device_id: int, feed: str, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Items not seen before. The first sight of a feed only seeds it."""
-        # Keep the newest window, including on the first poll. Comparing an unbounded
-        # history with a bounded cache otherwise announces evicted old items forever.
-        items = sorted(items, key=_sort_key, reverse=True)[:MAX_SEEN]
+    def device_ids(self) -> set[int]:
+        """The generators anything is remembered for."""
+        return {int(device_id) for device_id in self._data if device_id.isdigit()}
+
+    def forget(self, device_id: int) -> None:
+        """Drop what was seen of a generator that has left the account."""
+        if not self.closed and self._data.pop(str(device_id), None) is not None:
+            self._save()
+
+    def _bucket(self, device_id: int) -> tuple[dict[str, Any], dict[str, Any]]:
         bucket = self._data.setdefault(str(device_id), {})
-        keys = list(dict.fromkeys(item_key(i) for i in items))
-        if feed not in bucket:
+        return bucket, bucket.setdefault(SEEN_META, {})
+
+    def fresh(
+        self, device_id: int, feed: str, items: list[dict[str, Any]], *, window: int = 0
+    ) -> list[dict[str, Any]]:
+        """Items not seen before, newest first. The first sight of a feed only seeds it.
+
+        Anything not seen before is news, whatever its time says: a controller whose clock was
+        reset dates new entries in the past. Older items are history only when the answer can
+        reach further back than before: `window` (how many items were asked for; 0 when the
+        service decides) has grown, or the feed was empty when first read.
+        """
+        if self.closed:
+            return []
+        entries = _newest(items)
+        keys = [entry.key for entry in entries]
+        bucket, meta = self._bucket(device_id)
+        last: dict[str, Any] | None = meta.get(feed)
+        record: dict[str, Any] = {"window": window}
+        if feed not in bucket or (last is None and not bucket[feed]):
             bucket[feed] = keys
+            if not keys:
+                record["since"] = dt_util.utcnow().timestamp()
+            meta[feed] = record
             self._save()
             return []
         known = set(bucket[feed])
-        unseen = [i for i in items if item_key(i) not in known]
-        if not unseen:
-            return []
-        # An item older than every item already seen in this answer is history the feed did not
-        # show before (a larger notification limit, a longer window), not something that just
-        # happened: it is remembered, not announced.
-        seen_times = [_sort_key(i) for i in items if item_key(i) in known]
-        floor = min(seen_times) if seen_times else None
-        bucket[feed] = list(dict.fromkeys(keys + bucket[feed]))[:MAX_SEEN]
-        self._save()
-        return [i for i in unseen if floor is None or _sort_key(i) >= floor]
+        unseen = [entry for entry in entries if not _remembered(entry, known, last is None)]
+        # A larger limit, or the first answer since an update from a version that did not
+        # record one: what is older than everything already seen in this answer is history it
+        # did not show before.
+        reaches_further = last is None or window > last.get("window", 0)
+        new_keys = {entry.key for entry in unseen}
+        floor = min(
+            (e.stamp for e in entries if e.key not in new_keys and e.stamp is not None),
+            default=None,
+        )
+        # The feed was empty when first read: what is dated before that is a backlog it only
+        # now shows (a new generator's, or the empty answer was a fault), not news.
+        since = last.get("since") if last else None
+        news = [
+            entry.item
+            for entry in unseen
+            if not (
+                reaches_further
+                and (entry.stamp is None or (floor is not None and entry.stamp < floor))
+            )
+            and not (since is not None and entry.stamp is not None and entry.stamp < since)
+        ]
+        bucket[feed] = list(dict.fromkeys(keys + bucket[feed]))[:MAX_REMEMBERED]
+        if since is not None and not bucket[feed]:
+            record["since"] = since
+        if unseen or record != last:
+            self._save()
+        meta[feed] = record
+        return news
 
     def active_diff(
         self, device_id: int, feed: str, items: list[dict[str, Any]]
     ) -> tuple[list[dict[str, Any]], list[str]]:
         """For a list of *currently active* items: (newly active items, cleared keys)."""
-        bucket = self._data.setdefault(str(device_id), {})
-        keys = [item_key(i) for i in items]
+        if self.closed:
+            return [], []
+        current: dict[str, dict[str, Any]] = {}
+        for item in items:
+            current.setdefault(item_key(item), item)
+        bucket, meta = self._bucket(device_id)
         first_sight = feed not in bucket
         before = set(bucket.get(feed, []))
-        bucket[feed] = keys
-        if set(keys) != before or first_sight:
+        if not first_sight and feed not in meta:
+            # Recorded by an earlier version: an item without an id is under its legacy key.
+            renamed = {
+                key: legacy_item_key(item) for key, item in current.items() if not _has_id(item)
+            }
+            matched = before & set(renamed.values())
+            before = (before - matched) | {key for key, old in renamed.items() if old in matched}
+        changed = first_sight or feed not in meta or set(current) != before
+        bucket[feed] = list(current)
+        meta[feed] = {}
+        if changed:
             self._save()
         if first_sight:
             return [], []
-        added = [i for i, k in zip(items, keys, strict=True) if k not in before]
-        cleared = [k for k in before if k not in set(keys)]
+        added = [item for key, item in current.items() if key not in before]
+        cleared = [key for key in before if key not in current]
         return added, cleared
+
+
+def _read_failed(result: object, what: str) -> bool:
+    """Whether one of several reads made together failed.
+
+    A failed sign-in or a cancellation is raised. The service failing is expected and only
+    noted; anything else is a bug, logged as an error with its traceback, so a feed that stops
+    updating says why.
+    """
+    if isinstance(result, (RehlkoAuthError, asyncio.CancelledError)):
+        raise result
+    if isinstance(result, RehlkoError):
+        _LOGGER.debug("Could not refresh %s: %s", what, result)
+    elif isinstance(result, BaseException):
+        _LOGGER.error("Unexpected error refreshing %s", what, exc_info=result)
+    else:
+        return False
+    return True
 
 
 class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
@@ -217,6 +429,9 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
         self._follow_ups: list[CALLBACK_TYPE] = []
         self._definitions: dict[tuple[int, str, str], Any] = {}
         self._notification_lock = asyncio.Lock()
+        self._settings_writes = 0  # notification-setting writes so far (see _async_update_data)
+        self._device_locks: dict[int, asyncio.Lock] = {}  # one device PUT (and refresh) at a time
+        self._last_good: dict[int, GeneratorData] = {}  # last connected reading with details
         self._unreachable: set[int] = set()  # generators whose details call is failing
         self._absent: dict[int, int] = {}  # generator id -> consecutive polls it was missing
 
@@ -316,6 +531,7 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
         }
         me = previous.me if previous else {}
         settings = previous.notification_settings if previous else None
+        writes = self._settings_writes
         refreshes: list[Coroutine[Any, Any, Any]] = [
             self._async_refresh_generator(gen, feeds=feeds[device_id], slow=slow[device_id])
             for device_id, gen in generators.items()
@@ -329,9 +545,13 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                 raise _auth_failed(result) from result
             if isinstance(result, BaseException) and not isinstance(result, RehlkoError):
                 raise result
-        if slow_due:
-            if isinstance(results[-1], tuple):
-                me, settings = results[-1]
+        if slow_due and isinstance(results[-1], tuple):
+            me, settings = results[-1]
+        if self._settings_writes != writes:
+            # A setting was written while this poll ran: what it holds may predate that. Keep
+            # the written one, and leave `_last_slow` as the write left it (read it again).
+            settings = self.data.notification_settings if self.data else settings
+        elif slow_due:
             self._last_slow = now
         for device_id, gen in generators.items():
             if slow[device_id]:
@@ -369,12 +589,15 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                 if domain == DOMAIN and base.isdigit():
                     devices.setdefault(int(base), []).append(device)
         # An account that suddenly lists nothing is more likely a service fault than a sale.
-        missing = set(devices) - present if present else set()
+        # A generator with no devices left (removed by hand) can still have a seen record.
+        tracked = set(devices) | self.seen.device_ids()
+        missing = tracked - present if present else set()
         self._absent = {gid: self._absent.get(gid, 0) + 1 for gid in missing}
         for generator_id, count in self._absent.items():
             if count < STALE_POLLS:
                 continue
-            for device in devices[generator_id]:
+            self.seen.forget(generator_id)
+            for device in devices.get(generator_id, []):
                 _LOGGER.info("Removing %s: it is no longer on the account", device.name)
                 entry_id = self.config_entry.entry_id
                 # Newer Home Assistant gives every device one config entry (`config_entry_id`).
@@ -392,6 +615,8 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
             for device_id in set(schedule) - present:
                 del schedule[device_id]
         self._slow_read &= present
+        for device_id in set(self._last_good) - present:
+            del self._last_good[device_id]
 
     def _feeds_due(self, device_id: int, now: float, interval: float, poll: float) -> bool:
         """Whether a generator's activity log, alerts and notifications are due a read."""
@@ -414,10 +639,7 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                 return_exceptions=True,
             )
         for result in (me_result, settings_result):
-            if isinstance(result, RehlkoAuthError):
-                raise result
-            if isinstance(result, BaseException):
-                _LOGGER.debug("Could not refresh the account profile: %s", result)
+            _read_failed(result, "the account profile")
         if isinstance(me_result, dict):
             me = me_result
         if isinstance(settings_result, dict):
@@ -458,10 +680,7 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                 return_exceptions=True,
             )
             for result in (events, alerts, notifications):
-                if isinstance(result, RehlkoAuthError):
-                    raise result
-                if isinstance(result, BaseException):
-                    _LOGGER.debug("Could not refresh a feed of %s: %s", gen.name, result)
+                _read_failed(result, f"a feed of {gen.name}")
             if isinstance(events, list):
                 gen.events = sorted(events, key=_sort_key, reverse=True)
                 gen.refreshed_feeds.add("events")
@@ -478,9 +697,7 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
             notes = await asyncio.gather(
                 client.get_maintenance_notes(gen.device_id), return_exceptions=True
             )
-            if isinstance(notes[0], RehlkoAuthError):
-                raise notes[0]
-            if isinstance(notes[0], list):
+            if not _read_failed(notes[0], f"the maintenance notes of {gen.name}"):
                 gen.maintenance_notes = sorted(notes[0], key=_sort_key, reverse=True)
             connection = gen.get("connectionType")
             if (
@@ -497,6 +714,9 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
     # ------------------------------------------------------------------ announcing
     def _announce(self, previous: AccountData | None, data: AccountData) -> list[FeedItem]:
         """What is new since the last poll; the seen-store is updated as it is worked out."""
+        # Unloaded while this poll ran, the closed seen-store reports no feed item: the reloaded
+        # entry announces them. A power change is still announced; the reloaded entry has no
+        # earlier reading to find it with.
         items: list[FeedItem] = []
         for gen in data.generators.values():
             events = (
@@ -515,10 +735,18 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
             )
             for item in self._burst(added):
                 items.append(FeedItem(FEED_ALERT, gen, item, "raised"))
+            old = previous.generators.get(gen.device_id) if previous else None
+            was_active = {item_key(alert): alert for alert in old.alerts} if old else {}
             for key in cleared:
-                items.append(FeedItem(FEED_ALERT_CLEARED, gen, {"id": key}, "cleared"))
+                alert = was_active.get(key) or {"id": key}
+                items.append(FeedItem(FEED_ALERT_CLEARED, gen, alert, "cleared"))
             notifications = (
-                self.seen.fresh(gen.device_id, "notifications", gen.notifications)
+                self.seen.fresh(
+                    gen.device_id,
+                    "notifications",
+                    gen.notifications,
+                    window=self._notification_limit,
+                )
                 if "notifications" in gen.refreshed_feeds
                 else []
             )
@@ -526,17 +754,12 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                 items.append(
                     FeedItem(FEED_NOTIFICATION, gen, item, slugify(item.get("type") or "notice"))
                 )
-            old = previous.generators.get(gen.device_id) if previous else None
-            if (
-                old is not None
-                and old.details_available
-                and gen.details_available
-                and old.is_connected
-                and gen.is_connected
-                and old.details
-                and gen.details
-            ):
-                items.extend(self._power_changes(old, gen))
+            # Against the last good reading: a poll without one in between (a failed read, or
+            # the router down with the utility) must not hide the outage itself.
+            if gen.details_available and gen.is_connected and gen.details:
+                if (base := self._last_good.get(gen.device_id)) is not None:
+                    items.extend(self._power_changes(base, gen))
+                self._last_good[gen.device_id] = gen
         return items
 
     @callback
@@ -616,7 +839,7 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
         elif feed_item.feed == FEED_ALERT:
             bus_event, payload = EVENT_ALERT, {**base, **describe_event(item)}
         elif feed_item.feed == FEED_ALERT_CLEARED:
-            bus_event, payload = EVENT_ALERT_CLEARED, {**base, "id": item.get("id")}
+            bus_event, payload = EVENT_ALERT_CLEARED, {**base, **describe_event(item)}
         elif feed_item.feed == FEED_NOTIFICATION:
             bus_event, payload = EVENT_NOTIFICATION, {**base, **describe_notification(item)}
         else:
@@ -660,7 +883,10 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
         def _again(_now: datetime) -> None:
             if device_id is not None:
                 self._force_feeds.add(device_id)
-            self.hass.async_create_task(self.async_request_refresh())
+            # The entry's own task: cancelled when it unloads.
+            self.config_entry.async_create_background_task(
+                self.hass, self.async_request_refresh(), f"{DOMAIN} follow-up refresh"
+            )
 
         for delay in FOLLOW_UP_REFRESHES:
             self._follow_ups.append(async_call_later(self.hass, delay, _again))
@@ -804,6 +1030,11 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
 
     async def async_update_device(self, device_id: int, **changes: Any) -> None:
         """PUT the device with its current settings plus `changes` (API field names)."""
+        # The PUT replaces every field: the next one is built after this one is read back.
+        async with self._device_locks.setdefault(device_id, asyncio.Lock()):
+            await self._async_put_device(device_id, changes)
+
+    async def _async_put_device(self, device_id: int, changes: dict[str, Any]) -> None:
         gen = self.generator(device_id)
         body = {
             "displayName": gen.device.get("displayName"),
@@ -828,6 +1059,7 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                 settings = await self._async_call(self.client.get_notification_settings()) or {}
             settings[key] = enabled
             await self._async_call(self.client.set_notification_settings(settings))
+            self._settings_writes += 1
             if self.data is not None:
                 self.data.notification_settings = settings
                 self.async_update_listeners()

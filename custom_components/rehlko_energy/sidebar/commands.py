@@ -8,6 +8,7 @@ go through the domain's services, so the panel and automations share one code pa
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -21,6 +22,8 @@ from homeassistant.util.hass_dict import HassKey
 
 from ..const import DOMAIN
 from .snapshot import build_snapshot, trim_snapshot
+
+_LOGGER = logging.getLogger(__name__)
 
 type Push = Callable[[dict[str, Any]], None]
 
@@ -80,7 +83,12 @@ class SnapshotHub:
     def _publish(self) -> None:
         if not self._subscribers:
             return
-        snapshot = build_snapshot(self._hass)
+        try:
+            snapshot = build_snapshot(self._hass)
+        except Exception:
+            # Raised inside the coordinator's update, it would stop the entities after it.
+            _LOGGER.exception("Could not build the panel's snapshot")
+            return
         for push in list(self._subscribers):
             push(snapshot)
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Iterable, Iterator
 from functools import partial
 from typing import TYPE_CHECKING, Any
@@ -14,12 +15,15 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .api.util import printable
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import RehlkoCoordinator
 from .models import GeneratorData
 
 if TYPE_CHECKING:
     from . import RehlkoConfigEntry
+
+_LOGGER = logging.getLogger(__name__)
 
 APP_URL = "https://apps.apple.com/us/app/kohler-energy-management/id1627740645"
 # How a device names its parent. Newer Home Assistant wants the parent's ID in the device
@@ -122,7 +126,7 @@ def ats_device_info(
         return None
     info = DeviceInfo(
         identifiers={(DOMAIN, f"{gen.device_id}:ats")},
-        name=ats.get("displayName") or f"{gen.name} transfer switch",
+        name=printable(ats.get("displayName")) or f"{gen.name} transfer switch",
         manufacturer=MANUFACTURER,
         model=ats.get("modelNo") or "Automatic transfer switch",
         serial_number=serial,
@@ -152,7 +156,30 @@ def account_device_info(coordinator: RehlkoCoordinator) -> DeviceInfo:
     )
 
 
-class RehlkoEntity(CoordinatorEntity[RehlkoCoordinator]):
+class RehlkoCoordinatorEntity(CoordinatorEntity[RehlkoCoordinator]):
+    """Updated by the coordinator, without one bad value stopping the others.
+
+    Home Assistant raises while writing a state it refuses: text outside its length limits, a
+    measurement that is not a number, a date out of range. Raised inside the coordinator's
+    update, that would skip every listener after this one (other entities, the sidebar panel)
+    at every poll, while the integration still looked healthy.
+    """
+
+    _update_failed = False
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        try:
+            super()._handle_coordinator_update()
+        except Exception:
+            if not self._update_failed:  # once, not at every poll
+                _LOGGER.exception("Could not update %s", self.entity_id)
+            self._update_failed = True
+        else:
+            self._update_failed = False
+
+
+class RehlkoEntity(RehlkoCoordinatorEntity):
     """An entity of one generator."""
 
     _attr_has_entity_name = True
@@ -183,7 +210,7 @@ class RehlkoEntity(CoordinatorEntity[RehlkoCoordinator]):
         return super().available and self.gen is not None and self.gen.details_available
 
 
-class RehlkoAccountEntity(CoordinatorEntity[RehlkoCoordinator]):
+class RehlkoAccountEntity(RehlkoCoordinatorEntity):
     """An entity of the account itself (notification preferences)."""
 
     _attr_has_entity_name = True

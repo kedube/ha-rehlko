@@ -89,6 +89,15 @@ def slugify(value: Any) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
 
 
+_CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]+")
+
+
+def printable(value: Any) -> str:
+    """A name as text on one line: control characters (line breaks among them, which could
+    forge log lines) become spaces. Anything that is not text gives ''."""
+    return _CONTROL.sub(" ", value).strip() if isinstance(value, str) else ""
+
+
 def slugs(values: Iterable[Any]) -> list[str]:
     """Each value's slug, once, in order (enum sensor options and event types)."""
     out: list[str] = []

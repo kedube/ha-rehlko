@@ -104,3 +104,13 @@ def test_get_prefers_details_then_device() -> None:
     g = gen({"connectionType": "Ethernet"}, {"connectionType": "KohlerWifi"})
     assert g.get("connectionType") == "KohlerWifi"
     assert gen({"connectionType": "Ethernet"}, {}).get("connectionType") == "Ethernet"
+
+
+def test_a_name_is_one_line_of_text() -> None:
+    # A line break in a name would forge lines in the log; other control characters, too.
+    assert (
+        gen({"displayName": "Shed\nERROR forged line\x1b[31m"}).name
+        == "Shed ERROR forged line [31m"
+    )
+    assert gen({"displayName": "\n\t"}).name == "Home"  # nothing printable: the fallback
+    assert gen({"displayName": 42}).name == "Home"  # not text: the fallback, never the number

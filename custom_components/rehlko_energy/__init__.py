@@ -126,7 +126,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RehlkoConfigEntry) -> bo
 
     entry.async_on_unload(entry.add_update_listener(_options_changed))
     entry.async_on_unload(coordinator.async_shutdown_follow_ups)
-    entry.async_on_unload(coordinator.seen.async_flush)
+    entry.async_on_unload(coordinator.seen.async_close)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

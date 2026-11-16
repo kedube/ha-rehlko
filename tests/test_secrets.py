@@ -181,3 +181,44 @@ async def test_diagnostics_snapshot_and_logs_hold_no_credentials(
     ours = [r for r in caplog.records if r.name.startswith("custom_components.")]
     assert ours
     assert_no_secrets("\n".join(caplog.handler.format(r) for r in ours), also=(EMAIL,))
+
+
+async def test_the_notification_entity_shows_no_account_details(
+    hass, client, enable_custom_integrations, hass_client, hass_read_only_user
+):
+    """The account's user number (`tag`) and links stay on the admin-only bus event."""
+    from homeassistant.helpers import entity_registry as er
+    from homeassistant.setup import async_setup_component
+    from homeassistant.util import dt as dt_util
+
+    assert await async_setup_component(hass, "http", {})
+    assert await async_setup_component(hass, "api", {})
+    entry = MockConfigEntry(domain=DOMAIN, title="Test account", unique_id="owner", data={})
+    entry.add_to_hass(hass)
+    with patch("custom_components.rehlko_energy.build_client", return_value=client):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    client.get_notifications.return_value = [
+        {
+            "id": 7002,  # newer than the one the feed was seeded with
+            "tag": "homeowneruser:acct-Zq7",
+            "type": "EngineStartedNotice",
+            "message": "Home generator has started",
+            "timestamp": dt_util.utcnow().isoformat(),
+            "ctaLink": "https://example.invalid/account/acct-Zq7",
+        }
+    ]
+    await entry.runtime_data.async_refresh_everything()
+    await hass.async_block_till_done()
+    refresh = await hass.auth.async_create_refresh_token(
+        hass_read_only_user, client_id="http://example.invalid"
+    )
+    http = await hass_client(hass.auth.async_create_access_token(refresh))
+    entity = next(
+        e
+        for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+        if e.domain == "event" and e.unique_id.endswith("event-notifications")
+    )
+    attributes = (await (await http.get(f"/api/states/{entity.entity_id}")).json())["attributes"]
+    assert attributes["event_type"] == "engine_started_notice"
+    assert "acct-Zq7" not in json.dumps(attributes)

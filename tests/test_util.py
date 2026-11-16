@@ -139,3 +139,11 @@ def test_vocabulary_shapes() -> None:
         if name.isupper():
             values = getattr(V, name)
             assert all(isinstance(v, str) and v for v in values), name
+
+
+def test_printable() -> None:
+    from custom_components.rehlko_energy.api.util import printable
+
+    assert printable("Lake\r\nhouse genset") == "Lake house genset"
+    assert printable("  Cabin\x00 ") == "Cabin"
+    assert printable(None) == "" and printable(7) == ""

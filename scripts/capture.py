@@ -43,6 +43,17 @@ ENV_REL = "Wrapper/Runner.app/Frameworks/App.framework/flutter_assets/.env"
 PRIVACY = Path(__file__).resolve().parent.parent / "custom_components/rehlko_energy/privacy.py"
 
 
+class _NoRedirects(urllib.request.HTTPRedirectHandler):
+    """Refuse redirects. urllib would send the Authorization and ApiKey headers on to wherever
+    one points, plain http included; the integration refuses them too."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None  # urllib then raises HTTPError for the 3xx answer
+
+
+OPENER = urllib.request.build_opener(_NoRedirects)
+
+
 def load_privacy() -> ModuleType:
     """The integration's list of personal fields (the module imports nothing from Home Assistant)."""
     spec = importlib.util.spec_from_file_location("rehlko_privacy", PRIVACY)
@@ -63,7 +74,9 @@ def redact_capture(out: dict[str, Any]) -> dict[str, Any]:
 
 def write_private(target: Path, text: str) -> None:
     """Write `text` to `target`, readable and writable by the current user alone."""
-    fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    # Not through a symlink someone else planted where the file goes.
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(target, flags, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as handle:
         handle.write(text)
     os.chmod(target, 0o600)  # a file that already existed keeps its old mode otherwise
@@ -83,7 +96,7 @@ def _post_form(url: str, form: dict[str, str], headers: dict[str, str]) -> dict:
     data = urllib.parse.urlencode(form).encode()
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with OPENER.open(req, timeout=30) as resp:
             return json.loads(resp.read())
     except urllib.error.HTTPError as err:
         raise SystemExit(f"Token request failed ({err.code}): {err.read().decode()[:300]}") from err
@@ -119,7 +132,7 @@ def api_get(base_url: str, token: str, api_key: str, path: str, **params: object
             "Accept": "application/json",
         },
     )
-    with urllib.request.urlopen(req, timeout=45) as resp:
+    with OPENER.open(req, timeout=45) as resp:
         return json.loads(resp.read())
 
 
@@ -194,13 +207,15 @@ def main() -> int:
     for home in homes if isinstance(homes, list) else []:
         for device in home.get("devices") or []:
             did, host = device.get("id"), device.get("deviceHost")
-            print(f"  generator {did} ({device.get('displayName')})", file=sys.stderr)
+            # repr: a name is shown as text, never as terminal control codes.
+            print(f"  generator {did} ({device.get('displayName')!r})", file=sys.stderr)
+            seg = urllib.parse.quote(str(did), safe="")
             bundle = {"summary": device}
             for key, path in (
-                ("details", f"/devices/{did}"),
-                ("events", f"/devices/{did}/events"),
-                ("alerts", f"/devices/{did}/alerts"),
-                ("maintenance_notes", f"/devices/{did}/maintenance_notes"),
+                ("details", f"/devices/{seg}"),
+                ("events", f"/devices/{seg}/events"),
+                ("alerts", f"/devices/{seg}/alerts"),
+                ("maintenance_notes", f"/devices/{seg}/maintenance_notes"),
                 ("notifications", "/notifications"),
             ):
                 try:

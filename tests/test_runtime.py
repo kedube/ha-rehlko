@@ -16,7 +16,8 @@ from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.rehlko_energy import (
     async_remove_config_entry_device,
@@ -24,8 +25,18 @@ from custom_components.rehlko_energy import (
     build_client,
 )
 from custom_components.rehlko_energy.api import AppCredentials, RehlkoConnectionError
-from custom_components.rehlko_energy.const import DOMAIN, EVENT_POWER
-from custom_components.rehlko_energy.coordinator import FEED_NOTIFICATION, RehlkoCoordinator
+from custom_components.rehlko_energy.const import (
+    DOMAIN,
+    EVENT_ALERT,
+    EVENT_ALERT_CLEARED,
+    EVENT_POWER,
+)
+from custom_components.rehlko_energy.coordinator import (
+    FEED_NOTIFICATION,
+    FEED_POWER,
+    STALE_POLLS,
+    RehlkoCoordinator,
+)
 from custom_components.rehlko_energy.models import AccountData
 from custom_components.rehlko_energy.sidebar import (
     BUNDLE,
@@ -35,6 +46,7 @@ from custom_components.rehlko_energy.sidebar import (
     async_setup_sidebar,
 )
 from custom_components.rehlko_energy.sidebar.snapshot import build_snapshot
+from custom_components.rehlko_energy.text import GeneratorNameText
 
 from .conftest import FakeResponse, FakeSession, standby, token_response
 from .test_entities import SAMPLE_DETAILS, SAMPLE_DEVICE, build_sample_gen
@@ -105,6 +117,15 @@ async def test_stale_generator_disables_entities_and_writes(hass, entry, client)
     with pytest.raises(HomeAssistantError):
         await coordinator.async_start_exercise(1)
     client.start_exercise.assert_not_called()
+
+
+async def test_what_was_seen_of_a_departed_generator_is_forgotten(hass, entry, client):
+    coordinator = RehlkoCoordinator(hass, entry, client)
+    coordinator.seen.fresh(2, "events", [{"id": 1}])  # a generator the account no longer lists
+    for _ in range(STALE_POLLS):
+        assert 2 in coordinator.seen.device_ids()
+        coordinator.data = await coordinator._async_update_data()
+    assert coordinator.seen.device_ids() == {1}
 
 
 async def test_notification_writes_preserve_concurrent_changes(hass, entry, client):
@@ -853,3 +874,263 @@ async def test_a_new_refresh_token_is_saved_without_a_reload(
     await hass.async_block_till_done()
     assert entry.data["refresh_token"] == "new"
     assert entry.runtime_data is coordinator
+
+
+async def _set_up(hass, entry, client) -> RehlkoCoordinator:
+    with patch("custom_components.rehlko_energy.build_client", return_value=client):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    return entry.runtime_data
+
+
+def _state_of(hass, entry, domain: str, suffix: str) -> str:
+    entity = next(
+        e
+        for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+        if e.domain == domain and e.unique_id.endswith(suffix)
+    )
+    return hass.states.get(entity.entity_id).state
+
+
+@pytest.mark.parametrize("name", ["A" * 65, ""])
+async def test_a_name_the_text_entity_cannot_hold_stops_nothing(
+    hass, entry, client, enable_custom_integrations, name
+):
+    coordinator = await _set_up(hass, entry, client)
+    pushes: list[int] = []
+    coordinator.async_add_listener(lambda: pushes.append(1))  # as the sidebar panel listens
+    # Renamed in Rehlko's app; the fuel level changes at the same poll.
+    client.get_homes.return_value = [{"id": 1, "devices": [{**SAMPLE_DEVICE, "displayName": name}]}]
+    client.get_device.return_value = {**deepcopy(SAMPLE_DETAILS), "fuelLevelPercent": 5}
+    await coordinator.async_refresh()
+    assert pushes == [1]
+    assert float(_state_of(hass, entry, "sensor", "-fuel_level")) == 5
+    assert _state_of(hass, entry, "text", "-generator_name") == "unknown"
+
+
+async def test_an_entity_that_cannot_be_written_stops_nothing(
+    hass, entry, client, enable_custom_integrations, caplog
+):
+    coordinator = await _set_up(hass, entry, client)
+    pushes: list[int] = []
+    coordinator.async_add_listener(lambda: pushes.append(1))
+    with patch.object(
+        GeneratorNameText, "native_value", property(lambda _self: 1 / 0), create=True
+    ):
+        client.get_device.return_value = {**deepcopy(SAMPLE_DETAILS), "fuelLevelPercent": 5}
+        await coordinator.async_refresh()
+        await coordinator.async_refresh()
+    assert pushes == [1, 1]
+    assert float(_state_of(hass, entry, "sensor", "-fuel_level")) == 5
+    failures = [r for r in caplog.records if r.getMessage().startswith("Could not update text.")]
+    assert len(failures) == 1  # logged once, not at every poll
+
+
+@pytest.mark.parametrize("gap", ["details_failed", "offline"])
+async def test_an_outage_is_announced_after_one_bad_poll(hass, entry, client, gap):
+    running = deepcopy(client.get_device.return_value)  # the sample: running on generator power
+    standby(client)
+    coordinator = RehlkoCoordinator(hass, entry, client)
+    await coordinator.async_refresh()  # poll 1: standby, utility present
+    fired: list[str] = []
+    hass.bus.async_listen(EVENT_POWER, lambda event: fired.append(event.data["type"]))
+    if gap == "details_failed":
+        client.get_device.side_effect = RehlkoConnectionError("timeout")
+    else:  # the home's router lost power with the utility
+        client.get_homes.return_value[0]["devices"][0]["isConnected"] = False
+    await coordinator.async_refresh()  # poll 2: nothing usable
+    client.get_device.side_effect = None
+    client.get_device.return_value = running
+    client.get_homes.return_value[0]["devices"][0].update(status="Running", isConnected=True)
+    await coordinator.async_refresh()  # poll 3: running through the outage
+    await hass.async_block_till_done()
+    assert {"utility_lost", "generator_started", "transferred_to_generator"} <= set(fired)
+    await coordinator.async_shutdown()
+
+
+async def test_a_notification_setting_written_during_a_poll_stays(hass, entry, client):
+    server = {"sendShutdowns": True, "sendWarnings": True, "sendNotices": True}
+    client.get_notification_settings.side_effect = lambda: dict(server)
+
+    async def post(settings):
+        server.clear()
+        server.update(settings)
+
+    client.set_notification_settings.side_effect = post
+    coordinator = RehlkoCoordinator(hass, entry, client)
+    await coordinator.async_refresh()
+    gate = asyncio.Event()
+    details = client.get_device.return_value
+
+    async def slow_details(*_args, **_kwargs):
+        await gate.wait()
+        return details
+
+    client.get_device.side_effect = slow_details
+    first = asyncio.create_task(coordinator.async_set_notification_setting("sendShutdowns", False))
+    for _ in range(20):
+        await asyncio.sleep(0)  # its refresh has read the settings and waits on the generator
+    await coordinator.async_set_notification_setting("sendWarnings", False)
+    gate.set()
+    await first
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=11))
+    await hass.async_block_till_done()
+    assert coordinator.data.notification_settings["sendWarnings"] is False
+    await coordinator.async_set_notification_setting("sendNotices", False)
+    assert server == {"sendShutdowns": False, "sendWarnings": False, "sendNotices": False}
+    await coordinator.async_shutdown()
+
+
+async def test_a_rename_is_not_undone_by_another_device_write(hass, entry, client):
+    device = client.get_homes.return_value[0]["devices"][0]
+    details = client.get_device.return_value
+    details["autoFirmwareUpdateEnabled"] = True
+
+    async def put(_device_id, body):
+        device["displayName"] = body["displayName"]
+        details["autoFirmwareUpdateEnabled"] = body["autoFirmwareUpdateEnabled"]
+
+    client.update_device.side_effect = put
+    coordinator = RehlkoCoordinator(hass, entry, client)
+    await coordinator.async_refresh()
+    gate = asyncio.Event()
+
+    async def slow_details(*_args, **_kwargs):
+        await gate.wait()
+        return details
+
+    client.get_device.side_effect = slow_details
+    rename = asyncio.create_task(coordinator.async_update_device(1, displayName="Cabin"))
+    for _ in range(20):
+        await asyncio.sleep(0)
+    toggle = asyncio.create_task(
+        coordinator.async_update_device(1, autoFirmwareUpdateEnabled=False)
+    )
+    for _ in range(20):
+        await asyncio.sleep(0)
+    gate.set()
+    await asyncio.gather(rename, toggle)
+    assert device["displayName"] == "Cabin"
+    assert details["autoFirmwareUpdateEnabled"] is False
+    coordinator.async_shutdown_follow_ups()
+    await coordinator.async_shutdown()
+
+
+async def test_a_cleared_alert_carries_the_alert_it_clears(hass, entry, client):
+    alert = {
+        "id": 7,
+        "deviceEventId": "LowBatteryVoltage",
+        "level": "Warning",
+        "timestamp": "2026-11-16T10:00:00Z",
+    }
+    no_id = {
+        "deviceEventId": "HighCoolantTemp",
+        "level": "Warning",
+        "timestamp": "2026-11-16T10:00:00Z",
+    }
+    raised: list[dict] = []
+    cleared: list[dict] = []
+    hass.bus.async_listen(EVENT_ALERT, lambda event: raised.append(dict(event.data)))
+    hass.bus.async_listen(EVENT_ALERT_CLEARED, lambda event: cleared.append(dict(event.data)))
+    coordinator = RehlkoCoordinator(hass, entry, client)
+    await coordinator.async_refresh()
+    for alerts in ([alert, no_id], []):
+        client.get_alerts.return_value = alerts
+        await coordinator.async_refresh_everything()
+        await hass.async_block_till_done()
+
+    def by_code(events: list[dict]) -> dict:
+        return {e["code"]: (e["id"], e["timestamp"]) for e in events}
+
+    assert (
+        by_code(cleared)
+        == by_code(raised)
+        == {
+            "LowBatteryVoltage": (7, "2026-11-16T10:00:00Z"),
+            "HighCoolantTemp": (None, "2026-11-16T10:00:00Z"),
+        }
+    )
+    await coordinator.async_shutdown()
+
+
+@pytest.mark.parametrize(
+    ("read", "what"),
+    [
+        ("get_events", "a feed of"),
+        ("get_notification_settings", "the account profile"),
+        ("get_maintenance_notes", "the maintenance notes of"),
+    ],
+)
+async def test_an_unexpected_error_in_a_read_is_logged(hass, entry, client, caplog, read, what):
+    getattr(client, read).side_effect = TypeError("a bug in the parser")
+    coordinator = RehlkoCoordinator(hass, entry, client)
+    await coordinator._async_update_data()  # the poll itself goes on
+    assert any(
+        r.levelname == "ERROR" and what in r.getMessage() and r.exc_info for r in caplog.records
+    )
+
+
+async def test_a_poll_that_ends_after_unload_leaves_its_entries_to_the_reload(hass, entry, client):
+    running = deepcopy(client.get_device.return_value)
+    standby(client)
+    coordinator = RehlkoCoordinator(hass, entry, client)
+    await coordinator.async_refresh()  # seeds the feeds; standby
+    gate = asyncio.Event()
+
+    async def slow_details(*_args, **_kwargs):
+        await gate.wait()
+        return running  # the outage begins
+
+    client.get_device.side_effect = slow_details
+    client.get_homes.return_value[0]["devices"][0]["status"] = "Running"
+    # Dated after the feed was first read (empty): news, were the entry still loaded.
+    later = (dt_util.utcnow() + timedelta(minutes=1)).isoformat()
+    client.get_events.return_value = [{"id": 1, "timestamp": later}]
+    poll = asyncio.create_task(coordinator.async_refresh_everything())  # e.g. from an action
+    for _ in range(20):
+        await asyncio.sleep(0)
+    await coordinator.seen.async_close()  # the entry unloads while the poll waits
+    gate.set()
+    with patch.object(coordinator, "_fire") as fire:
+        await poll
+        await hass.async_block_till_done()
+    # The entry is the reloaded entry's to announce (it reads the record first); the power
+    # change is announced here, as the reloaded entry has no earlier reading to find it with.
+    assert {call.args[0].feed for call in fire.call_args_list} == {FEED_POWER}
+    assert coordinator.seen.fresh(1, "events", client.get_events.return_value) == []
+    await coordinator.async_shutdown()
+
+
+async def test_a_panel_snapshot_that_fails_stops_no_entity(
+    hass, entry, client, enable_custom_integrations, caplog
+):
+    from custom_components.rehlko_energy.sidebar.commands import SnapshotHub
+
+    coordinator = await _set_up(hass, entry, client)
+    hub = SnapshotHub(hass)
+    remove = hub.async_add(lambda _snapshot: None)  # an open panel
+    with patch(
+        "custom_components.rehlko_energy.sidebar.commands.build_snapshot",
+        side_effect=TypeError("a bug in the snapshot"),
+    ):
+        client.get_device.return_value = {**deepcopy(SAMPLE_DETAILS), "fuelLevelPercent": 5}
+        await coordinator.async_refresh()
+    assert float(_state_of(hass, entry, "sensor", "-fuel_level")) == 5
+    assert "Could not build the panel's snapshot" in caplog.text
+    remove()
+
+
+async def test_follow_up_refreshes_belong_to_the_entry(hass, entry, client):
+    coordinator = RehlkoCoordinator(hass, entry, client)
+    await coordinator.async_refresh()
+    with patch.object(
+        entry, "async_create_background_task", wraps=entry.async_create_background_task
+    ) as create:
+        await coordinator._async_after_write(1)
+        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=9))
+        await hass.async_block_till_done()
+    # Cancelled with the entry when it unloads, instead of outliving it.
+    assert create.call_count == 1
+    assert create.call_args.args[2] == f"{DOMAIN} follow-up refresh"
+    coordinator.async_shutdown_follow_ups()
+    await coordinator.async_shutdown()

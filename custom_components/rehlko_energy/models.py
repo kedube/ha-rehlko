@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from .api.util import as_float, device_mac, first, magnitude, plain_ip
+from .api.util import as_float, device_mac, first, magnitude, plain_ip, printable
 from .const import DEFAULT_NOMINAL_VOLTAGE, UTILITY_PRESENT_FRACTION
 
 # Genset (engine) states in which the engine is turning.
@@ -126,8 +126,8 @@ class GeneratorData:
     @property
     def name(self) -> str:
         return (
-            self.device.get("displayName")
-            or self.home.get("name")
+            printable(self.device.get("displayName"))
+            or printable(self.home.get("name"))
             or f"Generator {self.serial_number or self.device_id}"
         )
 

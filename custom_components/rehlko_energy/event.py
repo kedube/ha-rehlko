@@ -105,10 +105,15 @@ class RehlkoEvent(RehlkoEntity, EventEntity):
         event_type = feed_item.event_type
         if event_type not in (self.entity_description.event_types or []):
             event_type = self.entity_description.fallback
-        if feed_item.feed in (FEED_DEVICE_EVENT, FEED_ALERT):
+        if feed_item.feed in (FEED_DEVICE_EVENT, FEED_ALERT, FEED_ALERT_CLEARED):
             attributes = describe_event(feed_item.item)
         elif feed_item.feed == FEED_NOTIFICATION:
-            attributes = describe_notification(feed_item.item)
+            # The account's user number (`tag`) and the link stay on the admin-only bus event.
+            attributes = {
+                k: v
+                for k, v in describe_notification(feed_item.item).items()
+                if k not in ("tag", "cta_link")
+            }
         else:
             attributes = dict(feed_item.item)
         self._trigger_event(event_type, {k: v for k, v in attributes.items() if v is not None})

@@ -140,9 +140,22 @@ Fired on the Home Assistant event bus (use with an `event` trigger). Each includ
 | --- | --- | --- |
 | `rehlko_energy_device_event` | New activity‑log entry | `code`, `name`, `level`, `fmi`, `is_critical_fault` |
 | `rehlko_energy_alert` | Alert becomes active | same as above |
-| `rehlko_energy_alert_cleared` | Alert clears | `id` |
+| `rehlko_energy_alert_cleared` | Alert clears | same as when the alert was raised, `id` included; one that cleared while Home Assistant restarted carries only its `id`, as text |
 | `rehlko_energy_notification` | New app notification | `message`, `notification_type`, `cta_link` |
 | `rehlko_energy_power` | Derived power change | `type` = `utility_lost` / `utility_restored` / `generator_started` / `generator_stopped` / `transferred_to_generator` / `transferred_to_utility` |
+
+### What counts as new
+
+Each activity‑log entry, alert and notification is announced once, the first time a poll
+shows it, whatever time it carries: a controller whose clock was reset dates new entries in the
+past. What a feed already lists the first time it is read (after installing, or for a newly
+added generator) is remembered, not announced. So are the older notifications that appear when
+you raise **Notifications to fetch per generator**.
+
+After Home Assistant has been offline, what arrived meanwhile is announced at the next poll: at
+most the newest 25 entries of each feed per generator, each with the `timestamp` of when it
+happened. An automation that should react only to recent events can compare that time with the
+current one.
 
 ## Services
 
@@ -205,7 +218,10 @@ Mirroring the app, the integration refuses an action and raises a clear error wh
   **Last notification** (its message carries the generator's serial number) and **Dealer**.
   Enable them on the generator's device page if you want them. For the same reason the
   account's own device is named **Rehlko account**, not after your email address, which would
-  otherwise be part of its entities' names and IDs.
+  otherwise be part of its entities' names and IDs. The **Notification** event entity leaves
+  out a notification's `tag`, which holds your Rehlko account's user number, and its link;
+  the `rehlko_energy_notification` bus event, which only administrators can subscribe to,
+  keeps both.
 - If you entered app credentials yourself, **Reconfigure** shows the client ID only. The
   saved client secret and API key are not sent back to your browser; leave those fields empty
   to keep them, or clear all three to go back to the built‑in set.

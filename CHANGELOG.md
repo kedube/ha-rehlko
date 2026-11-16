@@ -5,6 +5,59 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+### Fixed
+
+- An activity‑log entry or notification is announced even when its time is missing, cannot be
+  read, or is older than everything already seen, as after a controller's clock was reset. Such
+  entries were taken for old history and skipped without a trace. Only the older notifications
+  that appear when **Notifications to fetch per generator** is raised are still kept quiet.
+- An entry is no longer announced twice when the service lists it twice in one answer or
+  writes its ID differently (`7.0` for `7`). Two entries without an ID that share a type and a
+  time are now both announced.
+- A feed that was empty when first read (a newly added generator, or a passing fault at the
+  service) no longer announces up to 25 old entries when its history appears.
+- With more than 400 entries in the activity log, old entries are no longer announced again
+  when the service lists entries of the same time in another order, or deletes newer ones.
+- Times without a UTC offset are read in Home Assistant's time zone when entries are put in
+  order, as the sensors already read them.
+- A damaged record of announced entries no longer makes every poll fail until the file is
+  deleted. The unreadable part is dropped with a warning in the log, and the affected feeds
+  start over without announcing what they already list.
+- The record of announced entries is saved a second after it changes instead of ten, so a power
+  cut just after a poll no longer repeats announcements at the next start. A generator that
+  leaves the account has its record removed along with its devices.
+- A generator name that is empty or longer than 64 characters no longer stops other entities
+  and the sidebar panel from updating at every poll, while the integration still looked
+  healthy. Actions that worked were reported as failed then, too. **Generator name** shows
+  unknown for such a name. More generally, a value Home Assistant refuses for one entity is
+  logged once and no longer holds up the others.
+- An outage is announced (`utility_lost`, `generator_started`, `transferred_to_generator`)
+  even when the poll before it could not read the generator, as when the home's router loses
+  power with the utility. Power changes are now worked out from the last good reading.
+- A notification setting changed while a poll was under way is no longer switched back by
+  that poll, and so no longer turned on again in Rehlko's service by the next change.
+- Renaming the generator and changing **Automatic firmware updates** at about the same time
+  no longer undoes the first change: device changes go to Rehlko one at a time.
+- `rehlko_energy_alert_cleared` carries the cleared alert's data, with the same `id` as the
+  `rehlko_energy_alert` event that raised it (it was the ID as text, or an internal key).
+- An unexpected error while reading a feed, the account or the maintenance notes is logged
+  as an error with its details. It was noted only at debug level while that data stopped
+  updating.
+- A poll still under way when the integration reloads no longer announces its new entries a
+  second time after the reload.
+- Line breaks and other control characters in a generator's name become spaces, so a name
+  can no longer forge lines in the log.
+
+### Changed
+
+- The **Notification** event entity no longer shows a notification's `tag` (your Rehlko
+  account's user number) or its link, as every Home Assistant user can read entity states.
+  The `rehlko_energy_notification` bus event, which only administrators can subscribe to,
+  keeps both.
+- `scripts/capture.py` refuses redirects, so the token and API key are never sent on to
+  another host; it does not write a capture through a symlink, and it puts the device ID in
+  URLs as one escaped path segment.
+
 ## [1.06] - 2026-11-16
 
 ### Fixed
