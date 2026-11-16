@@ -2,10 +2,12 @@
 
 import asyncio
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
@@ -150,7 +152,7 @@ async def test_bundle_is_served_at_registered_url(hass, hass_client):
 
 async def test_failed_initial_feeds_do_not_announce_historical_items(hass, entry, client):
     client.get_events.side_effect = RehlkoConnectionError("temporary failure")
-    with patch(MONOTONIC, return_value=5000.0) as clock:
+    with monotonic(5000.0) as clock:
         coordinator = RehlkoCoordinator(hass, entry, client)
         with patch.object(coordinator, "_fire") as fire:
             coordinator.data = await coordinator._async_update_data()
@@ -171,12 +173,24 @@ async def test_failed_initial_feeds_do_not_announce_historical_items(hass, entry
 # How long the machine has been up, in seconds: the monotonic clock counts from boot. The first
 # three are a host that has just started, which is when Home Assistant itself usually starts.
 UPTIMES = [5.0, 45.0, 119.0, 5000.0]
-MONOTONIC = "custom_components.rehlko_energy.coordinator.time.monotonic"
+
+
+@contextmanager
+def monotonic(value: float) -> Iterator[MagicMock]:
+    """Set the coordinator's monotonic clock, and only the coordinator's.
+
+    Patching `time.monotonic` itself would also move the event loop's clock, and a timer set
+    meanwhile (a debouncer's cooldown, say) would be due at a made-up time: in the past on a
+    machine that has been up for days, in the future on a CI runner that has just started.
+    """
+    with patch("custom_components.rehlko_energy.coordinator.time") as clock:
+        clock.monotonic.return_value = value
+        yield clock.monotonic
 
 
 @pytest.mark.parametrize("uptime", UPTIMES)
 async def test_new_generator_fetches_feeds_before_next_global_interval(hass, entry, client, uptime):
-    with patch(MONOTONIC, return_value=uptime):
+    with monotonic(uptime):
         coordinator = RehlkoCoordinator(hass, entry, client)
         coordinator.data = await coordinator._async_update_data()
         client.get_events.reset_mock()
@@ -189,7 +203,7 @@ async def test_new_generator_fetches_feeds_before_next_global_interval(hass, ent
 async def test_the_first_refresh_reads_everything_however_recently_the_host_booted(
     hass, entry, client, uptime
 ):
-    with patch(MONOTONIC, return_value=uptime):
+    with monotonic(uptime):
         coordinator = RehlkoCoordinator(hass, entry, client)
         coordinator.data = await coordinator._async_update_data()
         # The account and its notification settings, not only the generators.
@@ -208,7 +222,7 @@ async def test_the_first_refresh_reads_everything_however_recently_the_host_boot
 
 
 async def test_feeds_and_account_are_read_again_once_their_intervals_pass(hass, entry, client):
-    with patch(MONOTONIC, return_value=10.0) as clock:
+    with monotonic(10.0) as clock:
         coordinator = RehlkoCoordinator(hass, entry, client)
         coordinator.data = await coordinator._async_update_data()
         client.get_events.reset_mock()
@@ -501,7 +515,7 @@ async def test_the_panel_is_sent_bulky_fields_only_when_they_change(
 async def test_refresh_reads_the_account_again_however_recently_the_host_booted(
     hass, entry, client, uptime
 ):
-    with patch(MONOTONIC, return_value=uptime):
+    with monotonic(uptime):
         coordinator = RehlkoCoordinator(hass, entry, client)
         await coordinator.async_refresh()
         client.get_me.reset_mock()
@@ -516,13 +530,14 @@ async def test_a_notification_change_is_read_back_however_recently_the_host_boot
     hass, entry, client, uptime
 ):
     client.set_notification_settings = AsyncMock(return_value=None)
-    with patch(MONOTONIC, return_value=uptime):
+    with monotonic(uptime):
         coordinator = RehlkoCoordinator(hass, entry, client)
         await coordinator.async_refresh()
         client.get_notification_settings.reset_mock()
         await coordinator.async_set_notification_setting("sendShutdowns", False)
         await hass.async_block_till_done()
     client.get_notification_settings.assert_awaited()
+    await coordinator.async_shutdown()  # ends the refresh debouncer's cooldown
 
 
 async def test_one_generators_failing_feed_leaves_the_others_on_their_interval(hass, entry, client):
@@ -535,7 +550,7 @@ async def test_one_generators_failing_feed_leaves_the_others_on_their_interval(h
         return []
 
     client.get_notifications.side_effect = notifications
-    with patch(MONOTONIC, return_value=5000.0) as clock:
+    with monotonic(5000.0) as clock:
         coordinator = RehlkoCoordinator(hass, entry, client)
         coordinator.data = await coordinator._async_update_data()
         client.get_events.reset_mock()
@@ -552,7 +567,7 @@ async def test_a_feed_that_keeps_failing_is_read_no_more_often_than_one_that_wor
     standby(client)
     client.get_notifications.side_effect = RehlkoConnectionError("notifications down")
     reads = []
-    with patch(MONOTONIC, return_value=5000.0) as clock:
+    with monotonic(5000.0) as clock:
         coordinator = RehlkoCoordinator(hass, entry, client)
         coordinator.data = await coordinator._async_update_data()
         for elapsed in range(60, 660, 60):  # ten standby polls, a minute apart
@@ -569,7 +584,7 @@ async def test_a_generator_whose_details_keep_failing_is_not_read_in_full_every_
 ):
     standby(client)
     client.get_device.side_effect = RehlkoConnectionError("details down")
-    with patch(MONOTONIC, return_value=5000.0) as clock:
+    with monotonic(5000.0) as clock:
         coordinator = RehlkoCoordinator(hass, entry, client)
         coordinator.data = await coordinator._async_update_data()
         client.get_maintenance_notes.assert_awaited_once()
@@ -626,7 +641,7 @@ async def test_raising_the_notification_limit_announces_no_old_notifications(has
         ]
 
     client.get_notifications.side_effect = page
-    with patch(MONOTONIC, return_value=5000.0):
+    with monotonic(5000.0):
         coordinator = RehlkoCoordinator(hass, entry, client)
         coordinator.data = await coordinator._async_update_data()  # sees the newest ten
         with patch.object(coordinator, "_fire") as fire:
