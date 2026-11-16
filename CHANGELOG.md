@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+## [1.06] - 2026-11-16
+
 ### Fixed
 
 - **Refresh** and a change to a notification setting read the account's profile and
