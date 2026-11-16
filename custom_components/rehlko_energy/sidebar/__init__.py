@@ -1,8 +1,9 @@
 """The Generator sidebar panel: serving it, showing it, and taking it away.
 
-The front end lives in `frontend/` and is built into `www/rehlko-energy-panel.js`. The panel
-shows while any enabled entry has the sidebar option on (the default), whether or not that
-entry has finished loading, so a reload never makes it blink.
+The front end lives in `frontend/` and is built into `www/`: `rehlko-energy-panel.js` and the
+product photos beside it in `assets/`, which the script loads relative to its own URL. The
+panel shows while any enabled entry has the sidebar option on (the default), whether or not
+that entry has finished loading, so a reload never makes it blink.
 """
 
 from __future__ import annotations
@@ -30,8 +31,10 @@ _LOGGER = logging.getLogger(__name__)
 
 URL_PATH = "rehlko-energy"
 ELEMENT = "rehlko-energy-panel"
-STATIC_URL = "/rehlko_energy_static/rehlko-energy-panel.js"
-BUNDLE = Path(__file__).parent.parent / "www" / "rehlko-energy-panel.js"
+STATIC_ROOT = "/rehlko_energy_static"
+WWW = Path(__file__).parent.parent / "www"
+BUNDLE = WWW / "rehlko-energy-panel.js"
+STATIC_URL = f"{STATIC_ROOT}/{BUNDLE.name}"
 ICON = "mdi:home-lightning-bolt"
 
 # Home Assistant shows a custom panel's sidebar title as given, so it is chosen here from the
@@ -89,10 +92,11 @@ async def async_setup_sidebar(hass: HomeAssistant) -> None:
     if state.version is None:
         _LOGGER.warning("The sidebar panel's bundle is missing: %s", BUNDLE)
     elif getattr(hass, "http", None) is not None:
-        # Registered once per run (aiohttp cannot remove a route). Cached freely: the URL
-        # carries the bundle's digest, so a new build gets a new URL.
+        # Registered once per run (aiohttp cannot remove a route). Cached freely: the script's
+        # URL carries its digest and each photo's name carries its own, so a new build gets
+        # new URLs.
         await hass.http.async_register_static_paths(
-            [StaticPathConfig(STATIC_URL, str(BUNDLE), cache_headers=True)]
+            [StaticPathConfig(STATIC_ROOT, str(WWW), cache_headers=True)]
         )
         state.served = True
 

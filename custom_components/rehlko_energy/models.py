@@ -252,6 +252,28 @@ class GeneratorData:
     def supports_next_exercise_datetime(self) -> bool:
         return bool(self.exercise.get("supportsNextExerciseDateTimeParam"))
 
+    def derived(self) -> dict[str, Any]:
+        """The state worked out from the payloads, as the panel and diagnostics report it.
+
+        It includes the IP and MAC addresses: diagnostics redact them by these key names.
+        """
+        return {
+            "is_connected": self.is_connected,
+            "is_running": self.is_running,
+            "is_exercising": self.is_exercising,
+            "on_generator_power": self.on_generator_power,
+            "utility_present": self.utility_present,
+            "ready_to_run": self.ready_to_run,
+            "has_schedule": self.has_schedule,
+            "e_stop_engaged": self.e_stop_engaged,
+            "nominal_voltage": self.nominal_voltage,
+            "supports_exercise_scheduling": self.supports_exercise_scheduling,
+            "supports_next_exercise_datetime": self.supports_next_exercise_datetime,
+            "ip_address": self.ip_address,
+            "mac_address": self.mac_address,
+            "load_w": self.load_watts,
+        }
+
     def peripheral_parameters(self) -> list[tuple[str, dict[str, Any]]]:
         """`(peripheral, parameter)` for every load-module and PIM parameter."""
         out: list[tuple[str, dict[str, Any]]] = []

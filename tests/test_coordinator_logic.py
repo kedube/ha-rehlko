@@ -187,3 +187,20 @@ def test_long_feed_does_not_reannounce_evicted_history(tracker: SeenTracker) -> 
     newest = {"id": 600, "timestamp": (start + timedelta(minutes=600)).isoformat()}
     assert tracker.fresh(1, "events", [*items, newest]) == [newest]
     assert tracker.fresh(1, "events", [*items, newest]) == []
+
+
+def test_a_longer_window_is_remembered_not_announced(tracker: SeenTracker) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    newest = datetime(2026, 11, 1, tzinfo=UTC)
+    page = [
+        {"id": 100 - i, "timestamp": (newest - timedelta(hours=i)).isoformat()} for i in range(50)
+    ]
+    assert tracker.fresh(1, "notifications", page[:10]) == []  # the first sight seeds
+    # A larger limit shows forty older notifications: history, not news.
+    assert tracker.fresh(1, "notifications", page) == []
+    later = {"id": 101, "timestamp": (newest + timedelta(hours=1)).isoformat()}
+    assert tracker.fresh(1, "notifications", [later, *page]) == [later]
+    # One that reaches the service late, inside what was already shown, is still news.
+    late = {"id": 102, "timestamp": (newest - timedelta(hours=5, minutes=30)).isoformat()}
+    assert tracker.fresh(1, "notifications", [later, *page, late]) == [late]

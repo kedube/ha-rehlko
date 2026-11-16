@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
+from functools import partial
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
@@ -12,7 +13,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
@@ -20,7 +21,7 @@ from . import RehlkoConfigEntry
 from .api.util import humanize, parse_timestamp
 from .const import CONF_EXTRA_DIAGNOSTICS, DEFAULT_EXTRA_DIAGNOSTICS
 from .coordinator import RehlkoCoordinator
-from .entity import RehlkoEntity, value_or_none
+from .entity import EntityFactory, RehlkoEntity, async_discover_entities, value_or_none
 from .models import GeneratorData
 
 PARALLEL_UPDATES = 0
@@ -232,33 +233,29 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    created: set[str] = set()
+    extras = entry.options.get(CONF_EXTRA_DIAGNOSTICS, DEFAULT_EXTRA_DIAGNOSTICS)
 
-    @callback
-    def _discover() -> None:
-        new: list[BinarySensorEntity] = []
+    def candidates() -> Iterator[tuple[str, EntityFactory]]:
         for device_id, gen in coordinator.data.generators.items():
             for description in BINARY_SENSORS:
-                uid = f"{device_id}-{description.key}"
-                if uid in created or (description.exists_fn and not description.exists_fn(gen)):
+                if description.exists_fn and not description.exists_fn(gen):
                     continue
-                created.add(uid)
-                new.append(RehlkoBinarySensor(coordinator, device_id, description))
-            if entry.options.get(CONF_EXTRA_DIAGNOSTICS, DEFAULT_EXTRA_DIAGNOSTICS):
-                for source, payload in (("device", gen.device), ("details", gen.details)):
-                    for key, value in payload.items():
-                        if not isinstance(value, bool) or key in HANDLED_BOOLS:
-                            continue
-                        uid = f"{device_id}-extra-{key}"
-                        if uid in created:
-                            continue
-                        created.add(uid)
-                        new.append(ExtraFlagSensor(coordinator, device_id, source, key))
-        if new:
-            async_add_entities(new)
+                yield (
+                    f"{device_id}-{description.key}",
+                    partial(RehlkoBinarySensor, coordinator, device_id, description),
+                )
+            if not extras:
+                continue
+            for source, payload in (("device", gen.device), ("details", gen.details)):
+                for key, value in payload.items():
+                    if not isinstance(value, bool) or key in HANDLED_BOOLS:
+                        continue
+                    yield (
+                        f"{device_id}-extra-{key}",
+                        partial(ExtraFlagSensor, coordinator, device_id, source, key),
+                    )
 
-    _discover()
-    entry.async_on_unload(coordinator.async_add_listener(_discover))
+    async_discover_entities(entry, async_add_entities, candidates)
 
 
 class RehlkoBinarySensor(RehlkoEntity, BinarySensorEntity):

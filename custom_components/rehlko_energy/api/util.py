@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 import math
 import re
+from collections.abc import Iterable
 from datetime import UTC, datetime, tzinfo
 from typing import Any
 
@@ -86,6 +87,16 @@ def slugify(value: Any) -> str:
     """`EveryOtherWeek` -> `every_other_week` (translation and option keys)."""
     text = re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", "_", str(value))
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+
+def slugs(values: Iterable[Any]) -> list[str]:
+    """Each value's slug, once, in order (enum sensor options and event types)."""
+    out: list[str] = []
+    for value in values:
+        slug = slugify(value)
+        if slug and slug not in out:
+            out.append(slug)
+    return out
 
 
 def parse_timestamp(value: Any, default_tz: tzinfo | None = None) -> datetime | None:

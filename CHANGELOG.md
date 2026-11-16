@@ -5,6 +5,48 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+### Fixed
+
+- **Refresh** and a change to a notification setting read the account's profile and
+  notification settings again even in the first 15 minutes after the computer running Home
+  Assistant starts. Until then they waited for the next 15-minute read.
+- A feed that keeps failing for one generator (its activity log, alerts or notifications) no
+  longer makes every poll read every feed of every generator. A failed read is tried again at
+  the next poll and then at the usual interval, and other generators keep their own schedule.
+  A generator whose details cannot be read no longer has its maintenance notes and cell plan
+  read at every poll either.
+- Raising **Notifications to fetch per generator** no longer announces older notifications as
+  new. Anything older than all a feed showed before is remembered, not announced; the same held
+  for the activity log whenever the service's answer reached further back than before.
+- Events, on the bus (`rehlko_energy_*`) and from the event entities, are fired after the
+  entities have the poll's new states, so a listener that reads a state when an event arrives
+  sees the state the event describes.
+- Actions find their account in the way current Home Assistant expects. They read a device
+  property that Home Assistant 2026.10 deprecates and 2027.10 removes.
+
+### Changed
+
+- The account's device is called **Rehlko account**. Its name carried the account's email
+  address, and so did the names and IDs of the notification switches. New entity IDs and every
+  name now leave it out. Entity IDs that already exist are kept, so automations keep working;
+  rename them in Home Assistant's entity settings if you want the address out of them.
+- **Latest maintenance note**, **Last notification** and **Dealer** start disabled on new
+  installations: every Home Assistant user can read entity states, and these hold free text,
+  the generator's serial number and the dealer's contact details. The panel, which is for
+  administrators, still shows all of it. Existing installations keep them as they are.
+- The panel's script is a quarter of its former download (46 kB compressed instead of
+  188 kB). The product photos are separate files beside it, and a browser fetches only the
+  one for your generator.
+- With several panels open, each poll prepares the panel's data once for all of them, and the
+  account's profile is read alongside the generators instead of after them.
+- **Download diagnostics** includes all the state the integration works out (as the panel gets
+  it), with the IP and MAC addresses redacted.
+- `scripts/capture.py --redact` leaves out everything **Download diagnostics** does, and the
+  account's ID; it missed email, names, city, postal code, users and notification text. A
+  capture file is readable by you alone.
+- The repository's checks pin ruff and the third-party actions, use GitHub's current Node 24
+  actions, keep no Git credentials in jobs that do not push, and require 85% test coverage.
+
 ## [1.05] - 2026-11-14
 
 ### Fixed

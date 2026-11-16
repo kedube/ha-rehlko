@@ -164,6 +164,10 @@ async def test_diagnostics_snapshot_and_logs_hold_no_credentials(
         also=(EMAIL, "acct-Zq7", "client-id", "SN123", "1 Example Way", "Pat", "555-0100"),
     )
     assert "Lake house" not in diagnostics
+    # The network addresses, as reported and as the integration derives them.
+    for address in ("10.0.0.5", "ff:ee:dd:cc:bb:aa", "aa:bb:cc:dd:ee:ff"):
+        assert address not in diagnostics, address
+    assert '"nominal_voltage"' in diagnostics  # the derived state, as the panel gets it
     assert "batteryVoltageV" in diagnostics  # still useful
     assert "EngineStartedNotice" in diagnostics
     assert "https://auth.example" in diagnostics

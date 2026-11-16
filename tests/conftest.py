@@ -36,6 +36,15 @@ def client():
     return api
 
 
+def standby(client) -> None:
+    """Put the `client` fixture's generator at rest on utility power (the sample is running)."""
+    client.get_device.return_value.update(
+        powerSource="Utility", utilityVoltageV=241, engineState="Off", engineSpeedRpm=0
+    )
+    for device in client.get_homes.return_value[0]["devices"]:
+        device["status"] = "ReadyToRun"
+
+
 @pytest.fixture(autouse=True)
 def builtin_app(request):
     """Stands in for the app credentials written into the integration.

@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import RehlkoConfigEntry
 from .api import vocabulary as V
-from .api.util import slugify
+from .api.util import slugs
 from .coordinator import (
     FEED_ALERT,
     FEED_ALERT_CLEARED,
@@ -32,15 +32,6 @@ from .entity import RehlkoEntity, async_discover_generators
 PARALLEL_UPDATES = 0
 
 
-def _slugs(values: tuple[str, ...], *extra: str) -> list[str]:
-    out: list[str] = []
-    for value in (*values, *extra):
-        slug = slugify(value)
-        if slug and slug not in out:
-            out.append(slug)
-    return out
-
-
 @dataclass(frozen=True, kw_only=True)
 class RehlkoEventDescription(EventEntityDescription):
     feeds: tuple[str, ...]
@@ -52,7 +43,7 @@ EVENTS = (
         key="activity",
         translation_key="activity",
         feeds=(FEED_DEVICE_EVENT,),
-        event_types=_slugs(V.DEVICE_EVENT_LEVEL),
+        event_types=slugs(V.DEVICE_EVENT_LEVEL),
         fallback="notice",
     ),
     RehlkoEventDescription(
@@ -66,7 +57,7 @@ EVENTS = (
         key="notifications",
         translation_key="notifications",
         feeds=(FEED_NOTIFICATION,),
-        event_types=_slugs(V.NOTIFICATION_TYPE, "Notice"),
+        event_types=slugs((*V.NOTIFICATION_TYPE, "Notice")),
         fallback="notice",
     ),
     RehlkoEventDescription(

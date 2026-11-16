@@ -19,5 +19,7 @@ They identify the equipment supported by this unofficial integration.
 `generator-visual.ts` selects verified model matches and labels images of other models
 as representative. Actual model names remain visible in the Profile tab. Add new verified
 images and model rules here as coverage expands; do not claim a family image is an exact
-photo of an unsupported model. Images are embedded by Vite library mode in the shipped
-JavaScript, so installed panels make no image requests to third-party websites.
+photo of an unsupported model. The build copies the images beside the panel's script, into
+the integration's `www/assets/` under content-hashed names, and the integration serves them:
+installed panels make no image requests to third-party websites, and each viewer downloads
+only the image of their own generator.

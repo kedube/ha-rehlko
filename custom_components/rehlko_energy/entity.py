@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import HomeAssistant, callback
@@ -36,6 +37,39 @@ async def async_entity_texts(hass: HomeAssistant) -> dict[str, str]:
     return {key.removeprefix(prefix): value for key, value in strings.items()}
 
 
+type EntityFactory = Callable[[], Entity | Iterable[Entity]]
+
+
+@callback
+def async_discover_entities(
+    entry: RehlkoConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+    candidates: Callable[[], Iterable[tuple[str, EntityFactory]]],
+) -> None:
+    """Add entities as the account reports what they need: at setup and after every poll.
+
+    `candidates` yields a key and a factory for each entity (or set of entities) that could
+    exist now. A key's factory is called once, the first time the key is offered.
+    """
+    coordinator = entry.runtime_data
+    created: set[str] = set()
+
+    @callback
+    def _discover() -> None:
+        entities: list[Entity] = []
+        for key, factory in candidates():
+            if key in created:
+                continue
+            created.add(key)
+            made = factory()
+            entities.extend((made,) if isinstance(made, Entity) else made)
+        if entities:
+            async_add_entities(entities)
+
+    _discover()
+    entry.async_on_unload(coordinator.async_add_listener(_discover))
+
+
 @callback
 def async_discover_generators(
     entry: RehlkoConfigEntry,
@@ -45,21 +79,13 @@ def async_discover_generators(
 ) -> None:
     """Add fixed entity sets when a generator first reports the required data."""
     coordinator = entry.runtime_data
-    created: set[int] = set()
 
-    @callback
-    def _discover() -> None:
-        entities: list[Entity] = []
+    def candidates() -> Iterator[tuple[str, EntityFactory]]:
         for gen in coordinator.data.generators.values():
-            if gen.device_id in created or not gen.details_available or not eligible(gen):
-                continue
-            entities.extend(factory(gen))
-            created.add(gen.device_id)
-        if entities:
-            async_add_entities(entities)
+            if gen.details_available and eligible(gen):
+                yield str(gen.device_id), partial(factory, gen)
 
-    _discover()
-    entry.async_on_unload(coordinator.async_add_listener(_discover))
+    async_discover_entities(entry, async_add_entities, candidates)
 
 
 def generator_unique_id(entry_id: str, device_id: int, key: str) -> str:
@@ -113,10 +139,12 @@ def ats_device_info(
 
 
 def account_device_info(coordinator: RehlkoCoordinator) -> DeviceInfo:
-    entry = coordinator.config_entry
+    # Not named after the entry's title, which is the account's email address: a device's name
+    # becomes part of its entities' names and IDs, which end up in logs, automations and
+    # screenshots. Two accounts' entity IDs differ by Home Assistant's numeric suffix.
     return DeviceInfo(
-        identifiers={(DOMAIN, f"account:{entry.entry_id}")},
-        name=f"Rehlko account ({entry.title})",
+        identifiers={(DOMAIN, f"account:{coordinator.config_entry.entry_id}")},
+        name="Rehlko account",
         manufacturer=MANUFACTURER,
         model="Energy Management account",
         entry_type=DeviceEntryType.SERVICE,

@@ -26,9 +26,11 @@ jobs:
             harness: pytest-homeassistant-custom-component==0.13.316
             python: "3.13"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
 
@@ -42,17 +44,20 @@ jobs:
         run: >-
           python -m pytest tests/ -q
           --cov=custom_components/rehlko_energy
-          --cov-report=term-missing:skip-covered --cov-fail-under=60
+          --cov-report=term-missing:skip-covered --cov-fail-under=85
 
   lint:
     name: Ruff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install ruff
+      # Pinned: a new release can format differently or add checks and fail an unrelated push.
+      - run: pip install ruff==0.17.5
       - run: ruff check .
       - run: ruff format --check .
 
@@ -60,8 +65,10 @@ jobs:
     name: Translations are built
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       # strings.json and every file in translations/ are generated from the script and the

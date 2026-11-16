@@ -120,7 +120,12 @@ def resolve(hass: HomeAssistant, device_id: str) -> tuple[RehlkoCoordinator, int
             translation_key="not_a_generator",
             translation_placeholders={"device_id": device_id},
         )
-    for entry_id in device.config_entries:
+    # Newer Home Assistant gives a device one config entry (`config_entry_id`) and deprecates
+    # `config_entries`, which older versions use to list every account sharing the device.
+    entry_ids = (
+        [device.config_entry_id] if hasattr(device, "config_entry_id") else device.config_entries
+    )
+    for entry_id in entry_ids:
         entry = hass.config_entries.async_get_entry(entry_id)
         if entry and entry.domain == DOMAIN and entry.state is ConfigEntryState.LOADED:
             return entry.runtime_data, generator_id

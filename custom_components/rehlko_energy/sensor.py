@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import datetime
+from functools import partial
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -34,11 +35,18 @@ from homeassistant.util import dt as dt_util
 
 from . import RehlkoConfigEntry
 from .api import vocabulary as V
-from .api.util import as_float, humanize, parse_timestamp, plain_ip, slugify
+from .api.util import as_float, humanize, parse_timestamp, plain_ip, slugify, slugs
 from .const import CONF_EXTRA_DIAGNOSTICS, DEFAULT_EXTRA_DIAGNOSTICS
 from .coordinator import RehlkoCoordinator
-from .entity import RehlkoEntity, ats_device_info, value_or_none
+from .entity import (
+    EntityFactory,
+    RehlkoEntity,
+    async_discover_entities,
+    ats_device_info,
+    value_or_none,
+)
 from .models import GeneratorData
+from .peripherals import find_param
 
 PARALLEL_UPDATES = 0
 
@@ -411,9 +419,12 @@ SENSORS: tuple[RehlkoSensorDescription, ...] = (
         exists_fn=_has_device("maintenancePeriodDays"),
         covers=("maintenancePeriodDays",),
     ),
+    # Free text visible to every Home Assistant user, not only administrators (who have the
+    # panel), so it is shown only once enabled: notes can name people and carry phone numbers.
     RehlkoSensorDescription(
         key="last_maintenance_note",
         translation_key="last_maintenance_note",
+        entity_registry_enabled_default=False,
         value_fn=lambda g: (
             ((_latest(g.maintenance_notes) or {}).get("contents") or "")[:255] or None
         ),
@@ -473,9 +484,11 @@ SENSORS: tuple[RehlkoSensorDescription, ...] = (
             "timestamp": (_latest(g.events) or {}).get("timestamp"),
         },
     ),
+    # The message names the generator and carries its serial number; shown once enabled.
     RehlkoSensorDescription(
         key="last_notification",
         translation_key="last_notification",
+        entity_registry_enabled_default=False,
         value_fn=lambda g: ((_latest(g.notifications) or {}).get("message") or "")[:255] or None,
         attrs_fn=lambda g: {
             "type": (_latest(g.notifications) or {}).get("type"),
@@ -671,10 +684,12 @@ SENSORS: tuple[RehlkoSensorDescription, ...] = (
         value_fn=lambda g: _address_text(g.device.get("address") or g.home.get("address")),
         covers=("address",),
     ),
+    # The dealer's contact details and location; shown once enabled.
     RehlkoSensorDescription(
         key="dealer",
         translation_key="dealer",
         entity_category=DIAG,
+        entity_registry_enabled_default=False,
         value_fn=lambda g: (_dealer(g) or {}).get("name"),
         attrs_fn=lambda g: (
             {k: (_dealer(g) or {}).get(k) for k in ("displayPhoneNumber", "businessPartnerNo")}
@@ -846,63 +861,48 @@ HANDLED_KEYS = {key for d in SENSORS for key in d.covers} | {
 }
 
 
-def _slug_options(values: tuple[str, ...]) -> list[str]:
-    seen: list[str] = []
-    for value in values:
-        slug = slugify(value)
-        if slug and slug not in seen:
-            seen.append(slug)
-    return seen
-
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: RehlkoConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    created: set[str] = set()
+    extras = entry.options.get(CONF_EXTRA_DIAGNOSTICS, DEFAULT_EXTRA_DIAGNOSTICS)
 
-    @callback
-    def _discover() -> None:
-        new: list[SensorEntity] = []
+    def candidates() -> Iterator[tuple[str, EntityFactory]]:
         for device_id, gen in coordinator.data.generators.items():
             for description in SENSORS:
-                uid = f"{device_id}-{description.key}"
-                if uid in created:
-                    continue
                 if description.on_ats and ats_device_info(gen) is None:
                     continue
                 if description.exists_fn is not None and not description.exists_fn(gen):
                     continue
-                created.add(uid)
-                new.append(RehlkoSensor(coordinator, device_id, description))
-            uid = f"{device_id}-energy_produced"
-            if uid not in created and "generatorLoadW" in gen.details:
-                created.add(uid)
-                new.append(EnergyProducedSensor(coordinator, device_id))
+                yield (
+                    f"{device_id}-{description.key}",
+                    partial(RehlkoSensor, coordinator, device_id, description),
+                )
+            if "generatorLoadW" in gen.details:
+                yield (
+                    f"{device_id}-energy_produced",
+                    partial(EnergyProducedSensor, coordinator, device_id),
+                )
             for kind, param in gen.peripheral_parameters():
-                uid = f"{device_id}-peripheral-{param['definitionId']}"
-                if uid not in created:
-                    created.add(uid)
-                    new.append(
-                        PeripheralSensor(coordinator, device_id, kind, param["definitionId"])
+                definition_id = param["definitionId"]
+                yield (
+                    f"{device_id}-peripheral-{definition_id}",
+                    partial(PeripheralSensor, coordinator, device_id, kind, definition_id),
+                )
+            if not extras:
+                continue
+            for source, payload in (("device", gen.device), ("details", gen.details)):
+                for key, value in payload.items():
+                    if key in HANDLED_KEYS or isinstance(value, (bool, dict, list)):
+                        continue
+                    yield (
+                        f"{device_id}-extra-{key}",
+                        partial(ExtraFieldSensor, coordinator, device_id, source, key),
                     )
-            if entry.options.get(CONF_EXTRA_DIAGNOSTICS, DEFAULT_EXTRA_DIAGNOSTICS):
-                for source, payload in (("device", gen.device), ("details", gen.details)):
-                    for key, value in payload.items():
-                        if key in HANDLED_KEYS or isinstance(value, (bool, dict, list)):
-                            continue
-                        uid = f"{device_id}-extra-{key}"
-                        if uid in created:
-                            continue
-                        created.add(uid)
-                        new.append(ExtraFieldSensor(coordinator, device_id, source, key))
-        if new:
-            async_add_entities(new)
 
-    _discover()
-    entry.async_on_unload(coordinator.async_add_listener(_discover))
+    async_discover_entities(entry, async_add_entities, candidates)
 
 
 class RehlkoSensor(RehlkoEntity, SensorEntity):
@@ -920,7 +920,7 @@ class RehlkoSensor(RehlkoEntity, SensorEntity):
         )
         self.entity_description = description
         if description.enum_values is not None:
-            self._base_options = _slug_options(description.enum_values)
+            self._base_options = slugs(description.enum_values)
 
     @property
     def device_info(self) -> DeviceInfo | None:
@@ -1026,13 +1026,7 @@ class PeripheralSensor(RehlkoEntity, SensorEntity):
         self._attr_translation_placeholders = {"name": self._label()}
 
     def _param(self) -> dict[str, Any] | None:
-        gen = self.gen
-        if gen is None:
-            return None
-        for kind, param in gen.peripheral_parameters():
-            if kind == self._kind and str(param.get("definitionId")) == str(self._definition_id):
-                return param
-        return None
+        return find_param(self.gen, self._kind, self._definition_id)
 
     def _label(self) -> str:
         param = self._param() or {}

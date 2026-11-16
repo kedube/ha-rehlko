@@ -9,7 +9,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from ..const import DOMAIN
-from ..models import GeneratorData
 
 MAX_EVENTS = 300
 MAX_NOTIFICATIONS = 100
@@ -17,25 +16,6 @@ MAX_NOTIFICATIONS = 100
 # Most of a snapshot's size, and unchanged on almost every poll: the feeds are read every
 # couple of minutes and the entity list changes only when entities do.
 SELDOM_CHANGED = ("events", "notifications", "maintenance_notes", "entities")
-
-
-def _derived(gen: GeneratorData) -> dict[str, Any]:
-    return {
-        "is_connected": gen.is_connected,
-        "is_running": gen.is_running,
-        "is_exercising": gen.is_exercising,
-        "on_generator_power": gen.on_generator_power,
-        "utility_present": gen.utility_present,
-        "ready_to_run": gen.ready_to_run,
-        "has_schedule": gen.has_schedule,
-        "e_stop_engaged": gen.e_stop_engaged,
-        "nominal_voltage": gen.nominal_voltage,
-        "supports_exercise_scheduling": gen.supports_exercise_scheduling,
-        "supports_next_exercise_datetime": gen.supports_next_exercise_datetime,
-        "ip_address": gen.ip_address,
-        "mac_address": gen.mac_address,
-        "load_w": gen.load_watts,
-    }
 
 
 def build_snapshot(hass: HomeAssistant) -> dict[str, Any]:
@@ -93,7 +73,7 @@ def build_snapshot(hass: HomeAssistant) -> dict[str, Any]:
                     "maintenance_notes": gen.maintenance_notes,
                     "notifications": gen.notifications[:MAX_NOTIFICATIONS],
                     "cell_plan": gen.cell_plan,
-                    "derived": _derived(gen),
+                    "derived": gen.derived(),
                     "entities": entity_ids.get(str(device_id), {}),
                     "details_updated": gen.details_updated.isoformat()
                     if gen.details_updated

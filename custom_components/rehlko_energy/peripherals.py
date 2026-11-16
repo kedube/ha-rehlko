@@ -13,6 +13,16 @@ from typing import Any
 from .models import GeneratorData
 
 
+def find_param(gen: GeneratorData | None, kind: str, definition_id: Any) -> dict[str, Any] | None:
+    """The `kind` peripheral's parameter with this definition ID, if the generator reports it."""
+    if gen is None:
+        return None
+    for param_kind, param in gen.peripheral_parameters():
+        if param_kind == kind and str(param.get("definitionId")) == str(definition_id):
+            return param
+    return None
+
+
 def writable_params(
     gen: GeneratorData, types: tuple[type, ...]
 ) -> list[tuple[str, dict[str, Any]]]:
@@ -45,13 +55,7 @@ class PeripheralMixin:
         }
 
     def _param(self) -> dict[str, Any] | None:
-        gen: GeneratorData | None = self.gen  # type: ignore[attr-defined]
-        if gen is None:
-            return None
-        for kind, param in gen.peripheral_parameters():
-            if kind == self._kind and str(param.get("definitionId")) == str(self._definition_id):
-                return param
-        return None
+        return find_param(self.gen, self._kind, self._definition_id)  # type: ignore[attr-defined]
 
     @property
     def available(self) -> bool:

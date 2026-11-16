@@ -2,17 +2,19 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from functools import partial
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import RehlkoConfigEntry
 from .api.util import humanize
 from .coordinator import RehlkoCoordinator
-from .entity import RehlkoAccountEntity, RehlkoEntity
+from .entity import EntityFactory, RehlkoAccountEntity, RehlkoEntity, async_discover_entities
 from .peripherals import PeripheralMixin, writable_params
 
 PARALLEL_UPDATES = 1
@@ -37,36 +39,25 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    created: set[str] = set()
 
-    @callback
-    def _discover() -> None:
-        new: list[SwitchEntity] = []
-        settings = coordinator.data.notification_settings or {}
-        for key, value in settings.items():
-            if not isinstance(value, bool) or f"notify-{key}" in created:
-                continue
-            created.add(f"notify-{key}")
-            new.append(NotificationSettingSwitch(coordinator, key))
+    def candidates() -> Iterator[tuple[str, EntityFactory]]:
+        for key, value in (coordinator.data.notification_settings or {}).items():
+            if isinstance(value, bool):
+                yield f"notify-{key}", partial(NotificationSettingSwitch, coordinator, key)
         for device_id, gen in coordinator.data.generators.items():
-            uid = f"{device_id}-auto_firmware_update"
-            if uid not in created and isinstance(
-                gen.details.get("autoFirmwareUpdateEnabled"), bool
-            ):
-                created.add(uid)
-                new.append(AutoFirmwareUpdateSwitch(coordinator, device_id))
+            if isinstance(gen.details.get("autoFirmwareUpdateEnabled"), bool):
+                yield (
+                    f"{device_id}-auto_firmware_update",
+                    partial(AutoFirmwareUpdateSwitch, coordinator, device_id),
+                )
             for kind, param in writable_params(gen, (bool,)):
-                uid = f"{device_id}-peripheral-switch-{param['definitionId']}"
-                if uid not in created:
-                    created.add(uid)
-                    new.append(
-                        PeripheralSwitch(coordinator, device_id, kind, param["definitionId"])
-                    )
-        if new:
-            async_add_entities(new)
+                definition_id = param["definitionId"]
+                yield (
+                    f"{device_id}-peripheral-switch-{definition_id}",
+                    partial(PeripheralSwitch, coordinator, device_id, kind, definition_id),
+                )
 
-    _discover()
-    entry.async_on_unload(coordinator.async_add_listener(_discover))
+    async_discover_entities(entry, async_add_entities, candidates)
 
 
 class NotificationSettingSwitch(RehlkoAccountEntity, SwitchEntity):

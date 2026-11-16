@@ -3,7 +3,10 @@
 
 A standalone tool (Python standard library only) for inspecting the live API against your own
 account — handy for verifying the integration or refreshing docs/API.md. Output contains your
-serial number, address and tokens: keep it private and never commit it.
+name, email address, home address and serial numbers: keep it private and never commit it.
+With --redact it leaves out what the integration's Download diagnostics leaves out (the field
+list in custom_components/rehlko_energy/privacy.py) and the account's ID, so field names and
+shapes stay visible. The file is written readable by you alone.
 
 Credentials can come from the installed app's .env (--from-app), from flags, or from the
 environment (REHLKO_USERNAME/PASSWORD/CLIENT_ID/CLIENT_SECRET/API_KEY).
@@ -18,6 +21,7 @@ from __future__ import annotations
 import argparse
 import base64
 import getpass
+import importlib.util
 import json
 import os
 import re
@@ -26,6 +30,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from types import ModuleType
+from typing import Any
 
 ISSUER = "https://auth.home.kohlergenerators.com/oauth2/default"
 TOKEN_URL = f"{ISSUER}/v1/token"
@@ -34,6 +40,33 @@ BASE_URLS = ["https://api.hems.rehlko.com", "https://api.rk-prod.energymanagemen
 PREFIX = "/kem/api/v3"
 DEFAULT_APP = os.environ.get("REHLKO_APP", "/Applications/Energy Mgmt..app")
 ENV_REL = "Wrapper/Runner.app/Frameworks/App.framework/flutter_assets/.env"
+PRIVACY = Path(__file__).resolve().parent.parent / "custom_components/rehlko_energy/privacy.py"
+
+
+def load_privacy() -> ModuleType:
+    """The integration's list of personal fields (the module imports nothing from Home Assistant)."""
+    spec = importlib.util.spec_from_file_location("rehlko_privacy", PRIVACY)
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"Cannot load {PRIVACY}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def redact_capture(out: dict[str, Any]) -> dict[str, Any]:
+    """`out` without what Download diagnostics leaves out, nor the account's ID."""
+    privacy = load_privacy()
+    redacted = privacy.redact(out)
+    redacted["me"] = privacy.redact(out.get("me"), privacy.PERSONAL_FIELDS | {"id"})
+    return redacted
+
+
+def write_private(target: Path, text: str) -> None:
+    """Write `text` to `target`, readable and writable by the current user alone."""
+    fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(text)
+    os.chmod(target, 0o600)  # a file that already existed keeps its old mode otherwise
 
 
 def read_app_env(app_path: str) -> dict[str, str]:
@@ -126,7 +159,10 @@ def main() -> int:
         "--out", type=Path, help="Directory to write JSON into (default: print a summary only)."
     )
     p.add_argument(
-        "--redact", action="store_true", help="Blank serial numbers and addresses in the output."
+        "--redact",
+        action="store_true",
+        help="Leave out names, email, addresses, locations, serial numbers, network "
+        "identifiers, free text and the account ID, as Download diagnostics does.",
     )
     args = p.parse_args()
 
@@ -182,25 +218,20 @@ def main() -> int:
             out["generators"][str(did)] = bundle
 
     if args.redact:
-        out = json.loads(
-            re.sub(
-                r'("serialNumber"|"macAddress"|"address\d?"|"deviceIpAddress"):\s*"[^"]*"',
-                r'\1: "REDACTED"',
-                json.dumps(out),
-            )
-        )
+        out = redact_capture(out)
 
     if args.out:
-        args.out.mkdir(parents=True, exist_ok=True)
+        args.out.mkdir(mode=0o700, parents=True, exist_ok=True)
         target = args.out / "rehlko_capture.json"
-        target.write_text(json.dumps(out, indent=2), encoding="utf-8")
+        write_private(target, json.dumps(out, indent=2))
         print(f"Wrote {target}", file=sys.stderr)
     else:
         counts = {
             gid: {k: (len(v) if isinstance(v, list) else "ok") for k, v in g.items()}
             for gid, g in out["generators"].items()
         }
-        print(json.dumps({"account": me.get("id"), "generators": counts}, indent=2))
+        account = out["me"].get("id") if isinstance(out["me"], dict) else None
+        print(json.dumps({"account": account, "generators": counts}, indent=2))
     return 0
 
 

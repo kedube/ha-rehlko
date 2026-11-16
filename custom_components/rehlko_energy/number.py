@@ -2,17 +2,19 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from functools import partial
 from typing import Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.const import EntityCategory, UnitOfTime
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import RehlkoConfigEntry
 from .const import EXERCISE_MAX_MINUTES, EXERCISE_MIN_MINUTES
 from .coordinator import RehlkoCoordinator
-from .entity import RehlkoEntity
+from .entity import EntityFactory, RehlkoEntity, async_discover_entities
 from .peripherals import PeripheralMixin, writable_params
 
 PARALLEL_UPDATES = 1
@@ -24,29 +26,22 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    created: set[str] = set()
 
-    @callback
-    def _discover() -> None:
-        new: list[NumberEntity] = []
+    def candidates() -> Iterator[tuple[str, EntityFactory]]:
         for device_id, gen in coordinator.data.generators.items():
             if "exercise" in gen.details and gen.supports_exercise_scheduling:
-                uid = f"{device_id}-exercise_duration"
-                if uid not in created:
-                    created.add(uid)
-                    new.append(ExerciseDurationNumber(coordinator, device_id))
+                yield (
+                    f"{device_id}-exercise_duration",
+                    partial(ExerciseDurationNumber, coordinator, device_id),
+                )
             for kind, param in writable_params(gen, (int, float)):
-                uid = f"{device_id}-peripheral-number-{param['definitionId']}"
-                if uid not in created:
-                    created.add(uid)
-                    new.append(
-                        PeripheralNumber(coordinator, device_id, kind, param["definitionId"])
-                    )
-        if new:
-            async_add_entities(new)
+                definition_id = param["definitionId"]
+                yield (
+                    f"{device_id}-peripheral-number-{definition_id}",
+                    partial(PeripheralNumber, coordinator, device_id, kind, definition_id),
+                )
 
-    _discover()
-    entry.async_on_unload(coordinator.async_add_listener(_discover))
+    async_discover_entities(entry, async_add_entities, candidates)
 
 
 class ExerciseDurationNumber(RehlkoEntity, NumberEntity):

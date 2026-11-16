@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
@@ -59,6 +59,10 @@ MAX_SEEN = 400  # remembered item ids per feed
 STALE_POLLS = 3
 MAX_BURST = 25  # most items fired from one feed in one refresh (e.g. after downtime)
 FOLLOW_UP_REFRESHES = (8, 25, 60)  # seconds after a write; the controller lags the cloud
+ALL_FEEDS = frozenset({"events", "alerts", "notifications"})
+# A failed feed read is tried again at the next poll, then after doubling gaps (capped here)
+# until it is back on the feed interval.
+MAX_RETRY_DOUBLINGS = 10
 
 FEED_DEVICE_EVENT = "event"
 FEED_ALERT = "alert"
@@ -137,11 +141,17 @@ class SeenTracker:
             self._save()
             return []
         known = set(bucket[feed])
-        fresh = [i for i in items if item_key(i) not in known]
-        if fresh:
-            bucket[feed] = list(dict.fromkeys(keys + bucket[feed]))[:MAX_SEEN]
-            self._save()
-        return fresh
+        unseen = [i for i in items if item_key(i) not in known]
+        if not unseen:
+            return []
+        # An item older than every item already seen in this answer is history the feed did not
+        # show before (a larger notification limit, a longer window), not something that just
+        # happened: it is remembered, not announced.
+        seen_times = [_sort_key(i) for i in items if item_key(i) in known]
+        floor = min(seen_times) if seen_times else None
+        bucket[feed] = list(dict.fromkeys(keys + bucket[feed]))[:MAX_SEEN]
+        self._save()
+        return [i for i in unseen if floor is None or _sort_key(i) >= floor]
 
     def active_diff(
         self, device_id: int, feed: str, items: list[dict[str, Any]]
@@ -192,10 +202,16 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
         )
         self.client = client
         self.seen = SeenTracker(hass, entry.entry_id)
-        # None until the first refresh. Not 0.0: the monotonic clock counts from boot, so on
-        # a host that has just started, 0.0 is moments ago and nothing would look due.
-        self._last_feeds: float | None = None
+        # None until the first refresh, and again to force a read. Never 0.0: the monotonic clock
+        # counts from boot, so on a host that has just started, 0.0 is moments ago and nothing
+        # would look due.
         self._last_slow: float | None = None
+        # Per generator: when its feeds were last read (monotonic), how many reads in a row
+        # failed, and whether its slow data has been read since setup. One generator's failing
+        # feed never makes another generator's feeds due.
+        self._feeds_tried: dict[int, float] = {}
+        self._feed_failures: dict[int, int] = {}
+        self._slow_read: set[int] = set()
         self._force_feeds: set[int] = set()
         self._feed_listeners: list[Callable[[FeedItem], None]] = []
         self._follow_ups: list[CALLBACK_TYPE] = []
@@ -256,10 +272,10 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
 
         now = time.monotonic()
         was_active = previous is not None and any(g.is_active for g in previous.generators.values())
+        poll = (self._active_interval if was_active else self._idle_interval).total_seconds()
         feed_interval = self._feed_interval.total_seconds()
         if was_active:
             feed_interval = min(feed_interval, max(30.0, self._active_interval.total_seconds() * 2))
-        feeds_due = self._last_feeds is None or now - self._last_feeds >= feed_interval
         slow_due = self._last_slow is None or now - self._last_slow >= SLOW_REFRESH.total_seconds()
 
         generators: dict[int, GeneratorData] = {}
@@ -286,39 +302,55 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                 generators[device_id] = gen
 
         self._async_remove_stale_devices(set(generators))
-        results = await asyncio.gather(
-            *(
-                self._async_refresh_generator(
-                    gen,
-                    feeds=feeds_due or gen.device_id in forced or gen.feeds_updated is None,
-                    slow=slow_due or gen.device_id in forced or gen.details_updated is None,
-                )
-                for gen in generators.values()
-            ),
-            return_exceptions=True,
-        )
+        self._forget_departed(set(generators))
+        # Due by each generator's own record: never read, forced by a write, or its interval
+        # is up. Not by what the data lacks: a generator whose details or a feed keep failing
+        # would otherwise be read in full at every poll.
+        feeds = {
+            device_id: device_id in forced or self._feeds_due(device_id, now, feed_interval, poll)
+            for device_id in generators
+        }
+        slow = {
+            device_id: slow_due or device_id in forced or device_id not in self._slow_read
+            for device_id in generators
+        }
+        me = previous.me if previous else {}
+        settings = previous.notification_settings if previous else None
+        refreshes: list[Coroutine[Any, Any, Any]] = [
+            self._async_refresh_generator(gen, feeds=feeds[device_id], slow=slow[device_id])
+            for device_id, gen in generators.items()
+        ]
+        if slow_due:
+            # Alongside the generators: the account's reads do not depend on theirs.
+            refreshes.append(self._async_refresh_account(me, settings))
+        results = await asyncio.gather(*refreshes, return_exceptions=True)
         for result in results:
             if isinstance(result, RehlkoAuthError):
                 raise _auth_failed(result) from result
             if isinstance(result, BaseException) and not isinstance(result, RehlkoError):
                 raise result
-        me = previous.me if previous else {}
-        settings = previous.notification_settings if previous else None
         if slow_due:
-            me, settings = await self._async_refresh_account(me, settings)
-
-        if feeds_due and all(
-            gen.refreshed_feeds == {"events", "alerts", "notifications"}
-            for gen in generators.values()
-        ):
-            self._last_feeds = now
-        if slow_due:
+            if isinstance(results[-1], tuple):
+                me, settings = results[-1]
             self._last_slow = now
+        for device_id, gen in generators.items():
+            if slow[device_id]:
+                self._slow_read.add(device_id)
+            if feeds[device_id]:
+                self._feeds_tried[device_id] = now
+                if gen.refreshed_feeds >= ALL_FEEDS:
+                    self._feed_failures.pop(device_id, None)
+                else:
+                    self._feed_failures[device_id] = self._feed_failures.get(device_id, 0) + 1
 
         data = AccountData(
             me=me, homes=homes, generators=generators, notification_settings=settings
         )
-        self._announce(previous, data)
+        if items := self._announce(previous, data):
+            # Fired once the coordinator has published `data` (it does so without yielding
+            # after this returns), so listeners and event entities see the states the items
+            # describe, not the previous poll's.
+            self.hass.loop.call_soon(self._fire_all, items)
         self.update_interval = (
             self._active_interval
             if any(g.is_active for g in generators.values())
@@ -354,6 +386,24 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                     registry.async_update_device(device.id, remove_config_entry_id=entry_id)
             self._unreachable.discard(generator_id)
 
+    def _forget_departed(self, present: set[int]) -> None:
+        """Drop the schedules of generators the account no longer lists."""
+        for schedule in (self._feeds_tried, self._feed_failures):
+            for device_id in set(schedule) - present:
+                del schedule[device_id]
+        self._slow_read &= present
+
+    def _feeds_due(self, device_id: int, now: float, interval: float, poll: float) -> bool:
+        """Whether a generator's activity log, alerts and notifications are due a read."""
+        tried = self._feeds_tried.get(device_id)
+        if tried is None:
+            return True
+        if failures := self._feed_failures.get(device_id, 0):
+            # Tried again at the next poll, then after doubling gaps until it is back on the
+            # feed interval: a feed that keeps failing costs what a working one does.
+            interval = min(interval, poll * 2 ** min(failures - 1, MAX_RETRY_DOUBLINGS))
+        return now - tried >= interval
+
     async def _async_refresh_account(
         self, me: dict[str, Any], settings: dict[str, Any] | None
     ) -> tuple[dict[str, Any], dict[str, Any] | None]:
@@ -365,7 +415,7 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
             )
         for result in (me_result, settings_result):
             if isinstance(result, RehlkoAuthError):
-                raise _auth_failed(result) from result
+                raise result
             if isinstance(result, BaseException):
                 _LOGGER.debug("Could not refresh the account profile: %s", result)
         if isinstance(me_result, dict):
@@ -445,9 +495,10 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                     _LOGGER.debug("No cell plan for %s: %s", gen.name, err)
 
     # ------------------------------------------------------------------ announcing
-    def _announce(self, previous: AccountData | None, data: AccountData) -> None:
+    def _announce(self, previous: AccountData | None, data: AccountData) -> list[FeedItem]:
+        """What is new since the last poll; the seen-store is updated as it is worked out."""
+        items: list[FeedItem] = []
         for gen in data.generators.values():
-            items: list[FeedItem] = []
             events = (
                 self.seen.fresh(gen.device_id, "events", gen.events)
                 if "events" in gen.refreshed_feeds
@@ -486,8 +537,12 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
                 and gen.details
             ):
                 items.extend(self._power_changes(old, gen))
-            for feed_item in items:
-                self._fire(feed_item)
+        return items
+
+    @callback
+    def _fire_all(self, items: list[FeedItem]) -> None:
+        for feed_item in items:
+            self._fire(feed_item)
 
     @staticmethod
     def _burst(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -776,7 +831,7 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
             if self.data is not None:
                 self.data.notification_settings = settings
                 self.async_update_listeners()
-        self._last_slow = 0.0  # re-read on the next poll to confirm
+        self._last_slow = None  # re-read on the next poll to confirm
         await self.async_request_refresh()
 
     async def async_get_parameter_definitions(self, device_id: int, kind: str, serial: str) -> Any:
@@ -791,7 +846,7 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
     async def async_refresh_everything(self) -> None:
         if self.data:
             self._force_feeds.update(self.data.generators)
-        self._last_slow = 0.0
+        self._last_slow = None
         await self.async_refresh()
 
 

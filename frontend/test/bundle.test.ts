@@ -1,8 +1,13 @@
 // Load the file that ships in the integration, independently of the TypeScript source.
 import "../../custom_components/rehlko_energy/www/rehlko-energy-panel.js";
+import { existsSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, expect, it, vi } from "vitest";
 import type { HomeAssistant } from "../src/types";
 import { sampleSnapshot } from "./fixtures";
+
+const WWW = join(dirname(fileURLToPath(import.meta.url)), "../../custom_components/rehlko_energy/www");
 
 afterEach(() => document.body.replaceChildren());
 
@@ -26,7 +31,12 @@ it("the production bundle defines and renders a working custom panel", async () 
   expect(panel.shadowRoot!.querySelector("h1")!.textContent).toBe("Home generator");
   expect(panel.shadowRoot!.querySelectorAll('[role="tab"]')).toHaveLength(6);
   const image = panel.shadowRoot!.querySelector<HTMLImageElement>(".generator-photo")!;
-  expect(image.src).toMatch(/^data:image\/webp;base64,/);
+  // A file beside the script, found from the script's own URL, not one inlined into it.
+  const name = image.src.match(/\/www\/assets\/(generator-rca-[\w-]+\.webp)$/)?.[1];
+  expect(name).toBeDefined();
+  const photo = join(WWW, "assets", name!);
+  expect(existsSync(photo)).toBe(true);
+  expect(statSync(photo).size).toBeGreaterThan(1000);
   expect(image.width).toBe(1000);
   expect(image.height).toBe(626);
   panel.remove();

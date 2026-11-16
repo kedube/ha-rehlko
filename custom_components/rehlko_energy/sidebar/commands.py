@@ -8,6 +8,7 @@ go through the domain's services, so the panel and automations share one code pa
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import voluptuous as vol
@@ -16,9 +17,75 @@ from homeassistant.config_entries import SIGNAL_CONFIG_ENTRY_CHANGED, ConfigEntr
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.util.hass_dict import HassKey
 
 from ..const import DOMAIN
 from .snapshot import build_snapshot, trim_snapshot
+
+type Push = Callable[[dict[str, Any]], None]
+
+
+class SnapshotHub:
+    """Builds one snapshot per poll and hands it to every open panel.
+
+    It listens to the accounts only while a panel is subscribed.
+    """
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self._hass = hass
+        self._subscribers: list[Push] = []
+        self._listeners: list[CALLBACK_TYPE] = []
+        self._unsub_entries: CALLBACK_TYPE | None = None
+
+    @callback
+    def async_add(self, push: Push) -> CALLBACK_TYPE:
+        """Call `push` with each new snapshot until the returned callback is called."""
+        if not self._subscribers:
+            self._unsub_entries = async_dispatcher_connect(
+                self._hass, SIGNAL_CONFIG_ENTRY_CHANGED, self._entry_changed
+            )
+            self._attach()
+        self._subscribers.append(push)
+
+        @callback
+        def _remove() -> None:
+            if push in self._subscribers:
+                self._subscribers.remove(push)
+            if not self._subscribers:
+                self._detach()
+                if self._unsub_entries is not None:
+                    self._unsub_entries()
+                    self._unsub_entries = None
+
+        return _remove
+
+    @callback
+    def _attach(self) -> None:
+        self._detach()
+        for entry in self._hass.config_entries.async_loaded_entries(DOMAIN):
+            self._listeners.append(entry.runtime_data.async_add_listener(self._publish))
+
+    @callback
+    def _detach(self) -> None:
+        while self._listeners:
+            self._listeners.pop()()
+
+    @callback
+    def _entry_changed(self, _change: Any, entry: Any) -> None:
+        if entry.domain == DOMAIN:
+            self._attach()
+            self._publish()
+
+    @callback
+    def _publish(self) -> None:
+        if not self._subscribers:
+            return
+        snapshot = build_snapshot(self._hass)
+        for push in list(self._subscribers):
+            push(snapshot)
+
+
+DATA_SNAPSHOTS: HassKey[SnapshotHub] = HassKey(f"{DOMAIN}_snapshots")
 
 
 @callback
@@ -43,39 +110,20 @@ def ws_snapshot(
 def ws_subscribe(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    listeners: list[CALLBACK_TYPE] = []
     sent: dict[str, dict[str, Any]] = {}  # what this subscriber already has, per generator
 
     @callback
-    def _send() -> None:
-        snapshot = trim_snapshot(build_snapshot(hass), sent)
-        connection.send_message(websocket_api.event_message(msg["id"], snapshot))
+    def _push(snapshot: dict[str, Any]) -> None:
+        connection.send_message(
+            websocket_api.event_message(msg["id"], trim_snapshot(snapshot, sent))
+        )
 
-    @callback
-    def _attach() -> None:
-        while listeners:
-            listeners.pop()()
-        for entry in hass.config_entries.async_loaded_entries(DOMAIN):
-            listeners.append(entry.runtime_data.async_add_listener(_send))
-
-    @callback
-    def _entry_changed(_change: Any, entry: Any) -> None:
-        if entry.domain == DOMAIN:
-            _attach()
-            _send()
-
-    unsub_entries = async_dispatcher_connect(hass, SIGNAL_CONFIG_ENTRY_CHANGED, _entry_changed)
-
-    @callback
-    def _unsubscribe() -> None:
-        unsub_entries()
-        while listeners:
-            listeners.pop()()
-
-    connection.subscriptions[msg["id"]] = _unsubscribe
-    _attach()
+    hub = hass.data.get(DATA_SNAPSHOTS)
+    if hub is None:
+        hub = hass.data[DATA_SNAPSHOTS] = SnapshotHub(hass)
+    connection.subscriptions[msg["id"]] = hub.async_add(_push)
     connection.send_result(msg["id"])
-    _send()
+    _push(build_snapshot(hass))
 
 
 @websocket_api.websocket_command(

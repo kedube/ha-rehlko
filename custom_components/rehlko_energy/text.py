@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from functools import partial
 from typing import Any
 
 from homeassistant.components.text import TextEntity
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import RehlkoConfigEntry
 from .const import DOMAIN
 from .coordinator import RehlkoCoordinator
-from .entity import RehlkoEntity
+from .entity import EntityFactory, RehlkoEntity, async_discover_entities
 from .peripherals import PeripheralMixin, writable_params
 
 PARALLEL_UPDATES = 1
@@ -25,26 +27,18 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    created: set[str] = set()
 
-    @callback
-    def _discover() -> None:
-        new: list[TextEntity] = []
+    def candidates() -> Iterator[tuple[str, EntityFactory]]:
         for device_id, gen in coordinator.data.generators.items():
-            uid = f"{device_id}-generator_name"
-            if uid not in created:
-                created.add(uid)
-                new.append(GeneratorNameText(coordinator, device_id))
+            yield f"{device_id}-generator_name", partial(GeneratorNameText, coordinator, device_id)
             for kind, param in writable_params(gen, (str,)):
-                uid = f"{device_id}-peripheral-text-{param['definitionId']}"
-                if uid not in created:
-                    created.add(uid)
-                    new.append(PeripheralText(coordinator, device_id, kind, param["definitionId"]))
-        if new:
-            async_add_entities(new)
+                definition_id = param["definitionId"]
+                yield (
+                    f"{device_id}-peripheral-text-{definition_id}",
+                    partial(PeripheralText, coordinator, device_id, kind, definition_id),
+                )
 
-    _discover()
-    entry.async_on_unload(coordinator.async_add_listener(_discover))
+    async_discover_entities(entry, async_add_entities, candidates)
 
 
 class GeneratorNameText(RehlkoEntity, TextEntity):

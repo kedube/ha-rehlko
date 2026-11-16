@@ -11,9 +11,9 @@ MANUFACTURER: Final = "Rehlko (formerly Kohler Energy)"
 
 # --- Identity provider ----------------------------------------------------------------
 # The Energy Mgmt. app (com.kohlerpower.homeownerApp) signs in against this Okta
-# authorization server. The app's OAuth client ID, client secret and API key are not
-# shipped with this integration: the user supplies them during setup (docs/API.md explains
-# where the installed app keeps its configuration).
+# authorization server. The app's OAuth client ID, client secret and API key are built into
+# the integration (app_credentials.py); setup asks for them only if Rehlko refuses that set
+# (docs/API.md explains where the installed app keeps its configuration).
 OKTA_ISSUER: Final = "https://auth.home.kohlergenerators.com/oauth2/default"
 OKTA_TOKEN_URL: Final = f"{OKTA_ISSUER}/v1/token"
 OKTA_SCOPES: Final = "openid profile offline_access email"

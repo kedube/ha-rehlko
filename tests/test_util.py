@@ -16,6 +16,7 @@ from custom_components.rehlko_energy.api.util import (
     parse_timestamp,
     plain_ip,
     slugify,
+    slugs,
 )
 
 
@@ -31,6 +32,14 @@ def test_slugify() -> None:
     assert slugify("EveryOtherWeek") == "every_other_week"
     assert slugify("UnloadedFullSpeed") == "unloaded_full_speed"
     assert slugify("REC") == "rec"
+
+
+def test_slugs_are_listed_once_in_order() -> None:
+    assert slugs(["EveryOtherWeek", "Weekly", "every_other_week", "", "Weekly", None]) == [
+        "every_other_week",
+        "weekly",
+        "none",
+    ]
 
 
 def test_parse_timestamp_variants() -> None:

@@ -76,13 +76,14 @@ voltage, power source. Engine: speed, frequency, oil pressure, coolant / lube‑
 temperature, engine state, fuel level. Controller: battery voltage, controller temperature,
 controller clock, status, mode switch, shutdown reason, active alert count. Runtime &
 maintenance: total runtime, total operation, runtime since maintenance, last run, last/next
-maintenance, maintenance interval, latest note. Exercise: next exercise, last exercise
-start/end, exercise in progress. Activity: last activity, last notification. Site: outdoor
+maintenance, maintenance interval, latest note (disabled until you enable it). Exercise: next
+exercise, last exercise start/end, exercise in progress. Activity: last activity, last
+notification (disabled until you enable it). Site: outdoor
 temperature, weather.
 
 Diagnostic sensors: model, controller product/type, firmware version/build, fuel type, cooling,
 connection, the IP address Rehlko sees, MAC address, last connected, status/parameter update times, uptime %, Wi‑Fi/cellular
-signal, dealer, service agreement, cellular plan status/usage/expiry, scheduled firmware update,
+signal, dealer (disabled until you enable it), service agreement, cellular plan status/usage/expiry, scheduled firmware update,
 installation progress, and the transfer switch's position/link/signal.
 
 **IP address seen by Rehlko** is where Rehlko's servers saw the controller's connection come
@@ -198,6 +199,13 @@ Mirroring the app, the integration refuses an action and raises a clear error wh
 - None of these values is written to the log, included in **Download diagnostics**, sent to
   the sidebar panel, or returned by any action. Diagnostics also leave out your email, account
   ID, address, serial numbers and free‑text notes.
+- Everyone who can sign in to your Home Assistant can read entity states, while the sidebar
+  panel and the integration's actions are for administrators. So the sensors that hold free
+  text or contact details start disabled on a new installation: **Latest maintenance note**,
+  **Last notification** (its message carries the generator's serial number) and **Dealer**.
+  Enable them on the generator's device page if you want them. For the same reason the
+  account's own device is named **Rehlko account**, not after your email address, which would
+  otherwise be part of its entities' names and IDs.
 - If you entered app credentials yourself, **Reconfigure** shows the client ID only. The
   saved client secret and API key are not sent back to your browser; leave those fields empty
   to keep them, or clear all three to go back to the built‑in set.

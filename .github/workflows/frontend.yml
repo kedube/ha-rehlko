@@ -12,6 +12,7 @@ on:
       - "frontend/**"
       - "custom_components/rehlko_energy/www/**"
       - "custom_components/rehlko_energy/translations/**"
+      - ".github/workflows/frontend.yml"
   workflow_dispatch:
   workflow_call: # release.yml runs these checks before publishing
 
@@ -25,8 +26,10 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -36,6 +39,14 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm run test
-      # The built bundle is committed (the integration serves it). Fail if it drifted.
+      # The built panel is committed (the integration serves it): the script and the product
+      # photos in www/assets. Fail if anything there differs from this build, including a
+      # photo that was added, renamed or removed.
       - name: Built panel is up to date
-        run: git diff --exit-code ../custom_components/rehlko_energy/www/rehlko-energy-panel.js
+        run: |
+          changes="$(git status --porcelain -- ../custom_components/rehlko_energy/www)"
+          if [ -n "$changes" ]; then
+            echo "::error::www/ differs from a fresh build. Run npm run build and commit the result."
+            echo "$changes"
+            exit 1
+          fi

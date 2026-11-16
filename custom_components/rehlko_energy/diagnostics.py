@@ -17,6 +17,7 @@ from .const import (
     CONF_CLIENT_SECRET,
     CONF_REFRESH_TOKEN,
 )
+from .privacy import PERSONAL_FIELDS
 
 TO_REDACT_ENTRY = {
     CONF_USERNAME,
@@ -27,62 +28,8 @@ TO_REDACT_ENTRY = {
     CONF_CLIENT_ID,
     CONF_ACCOUNT_ID,
 }
-TO_REDACT = {
-    # identity and contact
-    "email",
-    "firstName",
-    "lastName",
-    "adminEmails",
-    "inviterFirstName",
-    "inviterLastName",
-    "e164PhoneNumber",
-    "displayPhoneNumber",
-    "userId",
-    # A notification's `tag` is `homeowneruser:` and the account's user number.
-    "tag",
-    "dealerAuthor",
-    "addedBy",
-    "associatedUsers",
-    "users",
-    "deviceSerialNumbers",
-    "inviteCode",
-    "pendingInviteCode",
-    "businessPartnerNo",
-    "name",
-    "displayName",
-    # Free text and links can embed addresses, customer names or account identifiers.
-    "contents",
-    "message",
-    "ctaLink",
-    # location
-    "address",
-    "address1",
-    "address2",
-    "city",
-    "postalCode",
-    "lat",
-    "long",
-    "latitude",
-    "longitude",
-    # device identity and network
-    "serialNumber",
-    "macAddress",
-    "deviceIpAddress",
-    "serverIpAddress",
-    # Not seen in the payloads so far, but identifying if a hub or cell kit ever reports them.
-    "ssid",
-    "wifiSsid",
-    "imei",
-    "iccid",
-    "imsi",
-    "msisdn",
-    "phoneNumber",
-    # tokens
-    "token",
-    "accessToken",
-    "refreshToken",
-    "idToken",
-}
+# Everything in a payload that names a person, a place or a device.
+TO_REDACT = PERSONAL_FIELDS
 
 
 async def async_get_config_entry_diagnostics(
@@ -102,16 +49,8 @@ async def async_get_config_entry_diagnostics(
                 "maintenance_notes": gen.maintenance_notes,
                 "notifications": gen.notifications[:50],
                 "cell_plan": gen.cell_plan,
-                "derived": {
-                    "is_connected": gen.is_connected,
-                    "is_running": gen.is_running,
-                    "is_exercising": gen.is_exercising,
-                    "on_generator_power": gen.on_generator_power,
-                    "utility_present": gen.utility_present,
-                    "ready_to_run": gen.ready_to_run,
-                    "has_schedule": gen.has_schedule,
-                    "e_stop_engaged": gen.e_stop_engaged,
-                },
+                # Including the IP and MAC addresses, which TO_REDACT removes.
+                "derived": gen.derived(),
                 "details_updated": gen.details_updated.isoformat() if gen.details_updated else None,
                 "feeds_updated": gen.feeds_updated.isoformat() if gen.feeds_updated else None,
             }
