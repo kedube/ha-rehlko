@@ -79,6 +79,9 @@
       "reauth_successful": "Zalogowano ponownie.",
       "reconfigure_successful": "Zaktualizowano dane uwierzytelniające.",
       "wrong_account": "Te dane uwierzytelniające należą do innego konta."
+    },
+    "initiate_flow": {
+      "user": "Dodaj konto"
     }
   },
   "options": {

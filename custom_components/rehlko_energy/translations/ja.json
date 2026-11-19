@@ -79,6 +79,9 @@
       "reauth_successful": "再度サインインしました。",
       "reconfigure_successful": "認証情報を更新しました。",
       "wrong_account": "その認証情報は別のアカウントのものです。"
+    },
+    "initiate_flow": {
+      "user": "アカウントを追加"
     }
   },
   "options": {

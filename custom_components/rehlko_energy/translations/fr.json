@@ -79,6 +79,9 @@
       "reauth_successful": "Reconnexion réussie.",
       "reconfigure_successful": "Identifiants mis à jour.",
       "wrong_account": "Ces identifiants appartiennent à un autre compte."
+    },
+    "initiate_flow": {
+      "user": "Ajouter un compte"
     }
   },
   "options": {

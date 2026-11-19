@@ -79,6 +79,9 @@
       "reauth_successful": "Opnieuw ingelogd.",
       "reconfigure_successful": "Inloggegevens bijgewerkt.",
       "wrong_account": "Die inloggegevens horen bij een ander account."
+    },
+    "initiate_flow": {
+      "user": "Account toevoegen"
     }
   },
   "options": {

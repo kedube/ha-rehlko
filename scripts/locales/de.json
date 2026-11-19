@@ -32,6 +32,7 @@
     "Signed in again.": "Erneut angemeldet.",
     "Credentials updated.": "Zugangsdaten aktualisiert.",
     "Those credentials belong to a different account.": "Diese Zugangsdaten gehören zu einem anderen Konto.",
+    "Add account": "Konto hinzufügen",
     "Rehlko Energy Management options": "Optionen für Rehlko Energy Management",
     "Polling interval in standby": "Abfrageintervall in Bereitschaft",
     "Polling interval while running or during an outage": "Abfrageintervall bei Betrieb oder Netzausfall",

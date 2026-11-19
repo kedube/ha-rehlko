@@ -79,6 +79,9 @@
       "reauth_successful": "Signed in again.",
       "reconfigure_successful": "Credentials updated.",
       "wrong_account": "Those credentials belong to a different account."
+    },
+    "initiate_flow": {
+      "user": "Add account"
     }
   },
   "options": {

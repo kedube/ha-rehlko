@@ -32,6 +32,7 @@
     "Signed in again.": "Zalogowano ponownie.",
     "Credentials updated.": "Zaktualizowano dane uwierzytelniające.",
     "Those credentials belong to a different account.": "Te dane uwierzytelniające należą do innego konta.",
+    "Add account": "Dodaj konto",
     "Rehlko Energy Management options": "Opcje Rehlko Energy Management",
     "Polling interval in standby": "Interwał odpytywania w stanie gotowości",
     "Polling interval while running or during an outage": "Interwał odpytywania podczas pracy lub zaniku zasilania",

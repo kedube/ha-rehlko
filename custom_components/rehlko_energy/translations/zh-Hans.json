@@ -79,6 +79,9 @@
       "reauth_successful": "已重新登录。",
       "reconfigure_successful": "凭据已更新。",
       "wrong_account": "这些凭据属于另一个账户。"
+    },
+    "initiate_flow": {
+      "user": "添加账户"
     }
   },
   "options": {

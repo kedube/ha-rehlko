@@ -32,6 +32,7 @@
     "Signed in again.": "Opnieuw ingelogd.",
     "Credentials updated.": "Inloggegevens bijgewerkt.",
     "Those credentials belong to a different account.": "Die inloggegevens horen bij een ander account.",
+    "Add account": "Account toevoegen",
     "Rehlko Energy Management options": "Opties voor Rehlko Energy Management",
     "Polling interval in standby": "Polling-interval in stand-by",
     "Polling interval while running or during an outage": "Polling-interval tijdens draaien of bij stroomuitval",

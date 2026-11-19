@@ -320,6 +320,8 @@ STRINGS = {
             "reconfigure_successful": "Credentials updated.",
             "wrong_account": "Those credentials belong to a different account.",
         },
+        # The integration page's add button; without this it reads "Add hub" (integration_type).
+        "initiate_flow": {"user": "Add account"},
     },
     "options": {
         "step": {

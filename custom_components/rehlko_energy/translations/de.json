@@ -79,6 +79,9 @@
       "reauth_successful": "Erneut angemeldet.",
       "reconfigure_successful": "Zugangsdaten aktualisiert.",
       "wrong_account": "Diese Zugangsdaten gehören zu einem anderen Konto."
+    },
+    "initiate_flow": {
+      "user": "Konto hinzufügen"
     }
   },
   "options": {

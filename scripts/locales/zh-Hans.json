@@ -32,6 +32,7 @@
     "Signed in again.": "已重新登录。",
     "Credentials updated.": "凭据已更新。",
     "Those credentials belong to a different account.": "这些凭据属于另一个账户。",
+    "Add account": "添加账户",
     "Rehlko Energy Management options": "Rehlko Energy Management 选项",
     "Polling interval in standby": "待机时的轮询间隔",
     "Polling interval while running or during an outage": "运行或停电期间的轮询间隔",

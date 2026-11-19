@@ -32,6 +32,7 @@
     "Signed in again.": "再度サインインしました。",
     "Credentials updated.": "認証情報を更新しました。",
     "Those credentials belong to a different account.": "その認証情報は別のアカウントのものです。",
+    "Add account": "アカウントを追加",
     "Rehlko Energy Management options": "Rehlko Energy Management のオプション",
     "Polling interval in standby": "待機中のポーリング間隔",
     "Polling interval while running or during an outage": "運転中または停電中のポーリング間隔",

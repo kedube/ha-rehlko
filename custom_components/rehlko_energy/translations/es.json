@@ -79,6 +79,9 @@
       "reauth_successful": "Se volvió a iniciar sesión.",
       "reconfigure_successful": "Credenciales actualizadas.",
       "wrong_account": "Esas credenciales pertenecen a otra cuenta."
+    },
+    "initiate_flow": {
+      "user": "Añadir cuenta"
     }
   },
   "options": {
