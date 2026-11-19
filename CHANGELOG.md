@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+## [1.08] - 2026-11-19
+
 ## [1.07] - 2026-11-16
 
 ### Fixed
