@@ -781,6 +781,12 @@
     "read_only": {
       "message": "{name} é somente leitura."
     },
+    "load_module_disconnected": {
+      "message": "O módulo de corte de carga não está conectado, então não é possível alterar {name}."
+    },
+    "pim_disconnected": {
+      "message": "O PIM não está conectado, então não é possível alterar {name}."
+    },
     "device_not_found": {
       "message": "O dispositivo {device_id} não foi encontrado."
     },

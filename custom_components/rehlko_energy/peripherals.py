@@ -65,7 +65,9 @@ class PeripheralMixin:
             super().available  # type: ignore[misc]
             and param is not None
             and not param.get("isReadOnly")
-            and bool(gen and gen.is_connected)
+            and gen is not None
+            and gen.is_connected
+            and gen.peripheral_connected(self._kind)
         )
 
     @property

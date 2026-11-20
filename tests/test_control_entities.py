@@ -131,6 +131,21 @@ async def test_peripheral_switch(sample_gen) -> None:
     assert coord.calls[-1] == ("async_set_peripheral_value", (1, 2, False), {})
 
 
+def test_peripheral_settings_are_unavailable_while_their_module_is_detached(sample_gen) -> None:
+    sample_gen.details["loadShed"]["parameters"][0]["value"] = 5
+    coord = RecordingCoordinator(sample_gen)
+    pim = switch_mod.PeripheralSwitch(coord, 1, "pim", 2)
+    load = number_mod.PeripheralNumber(coord, 1, "loadShed", 1)
+    assert pim.available and load.available
+    sample_gen.details["pim"]["isConnected"] = False
+    assert not pim.available
+    assert load.available  # the other module is still attached
+    sample_gen.details["loadShed"]["isConnected"] = False
+    assert not load.available
+    del sample_gen.details["pim"]["isConnected"]  # no field: taken as attached
+    assert pim.available
+
+
 async def test_generator_name_text(sample_gen) -> None:
     coord = RecordingCoordinator(sample_gen)
     entity = text_mod.GeneratorNameText(coord, 1)

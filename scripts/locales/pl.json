@@ -277,6 +277,8 @@
     "The maintenance note is empty.": "Notatka z konserwacji jest pusta.",
     "The name is empty.": "Nazwa jest pusta.",
     "{name} is read-only.": "Parametr {name} jest tylko do odczytu.",
+    "The load module is not connected, so {name} cannot be changed.": "Moduł odciążania nie jest połączony, więc nie można zmienić parametru {name}.",
+    "The PIM is not connected, so {name} cannot be changed.": "PIM nie jest połączony, więc nie można zmienić parametru {name}.",
     "Device {device_id} was not found.": "Nie znaleziono urządzenia {device_id}.",
     "Device {device_id} is not a Rehlko generator.": "Urządzenie {device_id} nie jest agregatem Rehlko.",
     "The account for device {device_id} is not loaded.": "Konto urządzenia {device_id} nie jest załadowane.",

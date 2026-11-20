@@ -277,6 +277,8 @@
     "The maintenance note is empty.": "メンテナンスメモが空です。",
     "The name is empty.": "名前が空です。",
     "{name} is read-only.": "{name} は読み取り専用です。",
+    "The load module is not connected, so {name} cannot be changed.": "負荷制御モジュールが接続されていないため、{name} を変更できません。",
+    "The PIM is not connected, so {name} cannot be changed.": "PIM が接続されていないため、{name} を変更できません。",
     "Device {device_id} was not found.": "デバイス {device_id} が見つかりませんでした。",
     "Device {device_id} is not a Rehlko generator.": "デバイス {device_id} は Rehlko の発電機ではありません。",
     "The account for device {device_id} is not loaded.": "デバイス {device_id} のアカウントが読み込まれていません。",

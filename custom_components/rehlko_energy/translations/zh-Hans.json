@@ -781,6 +781,12 @@
     "read_only": {
       "message": "{name} 为只读。"
     },
+    "load_module_disconnected": {
+      "message": "负载管理模块未连接，因此无法更改 {name}。"
+    },
+    "pim_disconnected": {
+      "message": "PIM 未连接，因此无法更改 {name}。"
+    },
     "device_not_found": {
       "message": "未找到设备 {device_id}。"
     },

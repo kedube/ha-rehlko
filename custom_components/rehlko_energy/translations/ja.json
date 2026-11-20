@@ -781,6 +781,12 @@
     "read_only": {
       "message": "{name} は読み取り専用です。"
     },
+    "load_module_disconnected": {
+      "message": "負荷制御モジュールが接続されていないため、{name} を変更できません。"
+    },
+    "pim_disconnected": {
+      "message": "PIM が接続されていないため、{name} を変更できません。"
+    },
     "device_not_found": {
       "message": "デバイス {device_id} が見つかりませんでした。"
     },

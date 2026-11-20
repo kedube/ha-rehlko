@@ -781,6 +781,12 @@
     "read_only": {
       "message": "{name} ist schreibgeschützt."
     },
+    "load_module_disconnected": {
+      "message": "Das Lastabwurfmodul ist nicht verbunden, daher kann {name} nicht geändert werden."
+    },
+    "pim_disconnected": {
+      "message": "Das PIM ist nicht verbunden, daher kann {name} nicht geändert werden."
+    },
     "device_not_found": {
       "message": "Das Gerät {device_id} wurde nicht gefunden."
     },

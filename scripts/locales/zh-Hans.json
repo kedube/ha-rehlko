@@ -277,6 +277,8 @@
     "The maintenance note is empty.": "维护备注为空。",
     "The name is empty.": "名称为空。",
     "{name} is read-only.": "{name} 为只读。",
+    "The load module is not connected, so {name} cannot be changed.": "负载管理模块未连接，因此无法更改 {name}。",
+    "The PIM is not connected, so {name} cannot be changed.": "PIM 未连接，因此无法更改 {name}。",
     "Device {device_id} was not found.": "未找到设备 {device_id}。",
     "Device {device_id} is not a Rehlko generator.": "设备 {device_id} 不是 Rehlko 发电机。",
     "The account for device {device_id} is not loaded.": "设备 {device_id} 所属的账户未加载。",

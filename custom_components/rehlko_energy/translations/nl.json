@@ -781,6 +781,12 @@
     "read_only": {
       "message": "{name} is alleen-lezen."
     },
+    "load_module_disconnected": {
+      "message": "De lastafschakelmodule is niet verbonden, dus {name} kan niet worden gewijzigd."
+    },
+    "pim_disconnected": {
+      "message": "De PIM is niet verbonden, dus {name} kan niet worden gewijzigd."
+    },
     "device_not_found": {
       "message": "Apparaat {device_id} is niet gevonden."
     },

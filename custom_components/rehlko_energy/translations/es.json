@@ -781,6 +781,12 @@
     "read_only": {
       "message": "{name} es de solo lectura."
     },
+    "load_module_disconnected": {
+      "message": "El módulo de carga no está conectado, por lo que no se puede cambiar {name}."
+    },
+    "pim_disconnected": {
+      "message": "El PIM no está conectado, por lo que no se puede cambiar {name}."
+    },
     "device_not_found": {
       "message": "No se encontró el dispositivo {device_id}."
     },

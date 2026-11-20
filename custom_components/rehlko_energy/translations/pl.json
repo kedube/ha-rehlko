@@ -781,6 +781,12 @@
     "read_only": {
       "message": "Parametr {name} jest tylko do odczytu."
     },
+    "load_module_disconnected": {
+      "message": "Moduł odciążania nie jest połączony, więc nie można zmienić parametru {name}."
+    },
+    "pim_disconnected": {
+      "message": "PIM nie jest połączony, więc nie można zmienić parametru {name}."
+    },
     "device_not_found": {
       "message": "Nie znaleziono urządzenia {device_id}."
     },

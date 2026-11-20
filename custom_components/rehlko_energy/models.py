@@ -283,6 +283,15 @@ class GeneratorData:
                     out.append((kind, param))
         return out
 
+    def peripheral_connected(self, kind: str) -> bool:
+        """Whether the load module (`loadShed`) or PIM (`pim`) is attached to the controller.
+
+        The service still lists a detached module's parameters. Only `isConnected: false`
+        counts as detached, as in the panel: a block without the field is taken as attached.
+        """
+        block = self.load_shed if kind == "loadShed" else self.pim
+        return block.get("isConnected") is not False
+
 
 @dataclass(slots=True)
 class AccountData:

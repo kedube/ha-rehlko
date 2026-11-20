@@ -1003,20 +1003,35 @@ class RehlkoCoordinator(DataUpdateCoordinator[AccountData]):
     ) -> None:
         gen = self.generator(device_id)
         self._require_online(gen)
-        param = next(
+        kind, param = next(
             (
-                p
-                for _, p in gen.peripheral_parameters()
+                (k, p)
+                for k, p in gen.peripheral_parameters()
                 if str(p.get("definitionId")) == str(definition_id)
             ),
-            None,
+            (None, None),
         )
-        if param is not None and param.get("isReadOnly"):
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="read_only",
-                translation_placeholders={"name": str(param.get("displayName") or definition_id)},
-            )
+        if kind is not None and param is not None:
+            name = str(param.get("displayName") or definition_id)
+            if param.get("isReadOnly"):
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="read_only",
+                    translation_placeholders={"name": name},
+                )
+            # The service still lists a detached module's settings; the panel locks them too.
+            if not gen.peripheral_connected(kind):
+                if kind == "loadShed":
+                    raise HomeAssistantError(
+                        translation_domain=DOMAIN,
+                        translation_key="load_module_disconnected",
+                        translation_placeholders={"name": name},
+                    )
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="pim_disconnected",
+                    translation_placeholders={"name": name},
+                )
         await self._async_call(self.client.set_peripheral_value(device_id, definition_id, value))
         await self._async_after_write(device_id)
 

@@ -133,6 +133,26 @@ async def test_a_read_only_setting_is_refused_before_the_cloud_is_asked(hass, en
     client.set_peripheral_value.assert_not_awaited()
 
 
+@pytest.mark.parametrize(
+    ("kind", "definition_id", "key"),
+    [("pim", "2", "pim_disconnected"), ("loadShed", "1", "load_module_disconnected")],
+)
+async def test_a_setting_of_a_detached_module_is_refused_before_the_cloud_is_asked(
+    hass, entry, client, kind, definition_id, key
+):
+    client.get_device.return_value[kind]["isConnected"] = False
+    await entry.runtime_data.async_refresh()
+    client.set_peripheral_value = AsyncMock()
+    with pytest.raises(HomeAssistantError) as err:
+        await call(
+            hass,
+            "set_peripheral_value",
+            {"device_id": device(hass, entry, "1"), "definition_id": definition_id, "value": False},
+        )
+    assert err.value.translation_key == key
+    client.set_peripheral_value.assert_not_awaited()
+
+
 async def test_writes_reach_the_cloud_as_the_app_sends_them(hass, entry, client):
     standby(client)
     await entry.runtime_data.async_refresh()

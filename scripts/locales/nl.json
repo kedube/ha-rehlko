@@ -277,6 +277,8 @@
     "The maintenance note is empty.": "De onderhoudsnotitie is leeg.",
     "The name is empty.": "De naam is leeg.",
     "{name} is read-only.": "{name} is alleen-lezen.",
+    "The load module is not connected, so {name} cannot be changed.": "De lastafschakelmodule is niet verbonden, dus {name} kan niet worden gewijzigd.",
+    "The PIM is not connected, so {name} cannot be changed.": "De PIM is niet verbonden, dus {name} kan niet worden gewijzigd.",
     "Device {device_id} was not found.": "Apparaat {device_id} is niet gevonden.",
     "Device {device_id} is not a Rehlko generator.": "Apparaat {device_id} is geen Rehlko-generator.",
     "The account for device {device_id} is not loaded.": "Het account voor apparaat {device_id} is niet geladen.",

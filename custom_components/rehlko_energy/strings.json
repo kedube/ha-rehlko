@@ -781,6 +781,12 @@
     "read_only": {
       "message": "{name} is read-only."
     },
+    "load_module_disconnected": {
+      "message": "The load module is not connected, so {name} cannot be changed."
+    },
+    "pim_disconnected": {
+      "message": "The PIM is not connected, so {name} cannot be changed."
+    },
     "device_not_found": {
       "message": "Device {device_id} was not found."
     },

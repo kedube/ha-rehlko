@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+### Fixed
+
+- Load-module and PIM settings are unavailable while their module reports that it is not
+  connected, as they already were in the sidebar panel. The service still lists a detached
+  module's settings, so they appeared as switches that could be changed. The
+  `set_peripheral_value` action now refuses such a change before anything is sent to Rehlko.
+
 ## [1.08] - 2026-11-19
 
 ## [1.07] - 2026-11-16

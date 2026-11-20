@@ -781,6 +781,12 @@
     "read_only": {
       "message": "{name} est en lecture seule."
     },
+    "load_module_disconnected": {
+      "message": "Le module de délestage n'est pas connecté, il est donc impossible de modifier {name}."
+    },
+    "pim_disconnected": {
+      "message": "Le PIM n'est pas connecté, il est donc impossible de modifier {name}."
+    },
     "device_not_found": {
       "message": "L'appareil {device_id} est introuvable."
     },

@@ -432,6 +432,10 @@ STRINGS = {
         "empty_note": {"message": "The maintenance note is empty."},
         "empty_name": {"message": "The name is empty."},
         "read_only": {"message": "{name} is read-only."},
+        "load_module_disconnected": {
+            "message": "The load module is not connected, so {name} cannot be changed."
+        },
+        "pim_disconnected": {"message": "The PIM is not connected, so {name} cannot be changed."},
         "device_not_found": {"message": "Device {device_id} was not found."},
         "not_a_generator": {"message": "Device {device_id} is not a Rehlko generator."},
         "entry_not_loaded": {"message": "The account for device {device_id} is not loaded."},

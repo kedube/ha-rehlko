@@ -277,6 +277,8 @@
     "The maintenance note is empty.": "Die Wartungsnotiz ist leer.",
     "The name is empty.": "Der Name ist leer.",
     "{name} is read-only.": "{name} ist schreibgeschützt.",
+    "The load module is not connected, so {name} cannot be changed.": "Das Lastabwurfmodul ist nicht verbunden, daher kann {name} nicht geändert werden.",
+    "The PIM is not connected, so {name} cannot be changed.": "Das PIM ist nicht verbunden, daher kann {name} nicht geändert werden.",
     "Device {device_id} was not found.": "Das Gerät {device_id} wurde nicht gefunden.",
     "Device {device_id} is not a Rehlko generator.": "Das Gerät {device_id} ist kein Rehlko-Generator.",
     "The account for device {device_id} is not loaded.": "Das Konto für das Gerät {device_id} ist nicht geladen.",

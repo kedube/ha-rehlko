@@ -781,6 +781,12 @@
     "read_only": {
       "message": "{name} è di sola lettura."
     },
+    "load_module_disconnected": {
+      "message": "Il modulo di distacco carichi non è connesso, quindi non è possibile modificare {name}."
+    },
+    "pim_disconnected": {
+      "message": "Il PIM non è connesso, quindi non è possibile modificare {name}."
+    },
     "device_not_found": {
       "message": "Il dispositivo {device_id} non è stato trovato."
     },

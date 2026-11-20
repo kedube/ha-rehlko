@@ -93,6 +93,21 @@ def test_peripheral_parameters_flattens_loadshed_and_pim() -> None:
     assert [(k, p["definitionId"]) for k, p in params] == [("loadShed", 1), ("pim", 2)]
 
 
+def test_only_an_explicit_false_means_a_peripheral_is_detached() -> None:
+    # A detached PIM's parameters are still listed (seen in a real diagnostics download).
+    g = gen(
+        details={
+            "loadShed": {"isConnected": True, "parameters": []},
+            "pim": {"isConnected": False, "parameters": [{"definitionId": 9, "value": False}]},
+        }
+    )
+    assert g.peripheral_connected("loadShed")
+    assert not g.peripheral_connected("pim")
+    # Without the field (or the block), as in the panel: taken as attached.
+    assert gen(details={"pim": {"parameters": []}}).peripheral_connected("pim")
+    assert gen(details={}).peripheral_connected("loadShed")
+
+
 def test_source_host_and_model() -> None:
     g = gen({"deviceHost": "REC", "modelDisplayName": "24RCL", "model": "Model24RCL"})
     assert g.source_host == "REC"
