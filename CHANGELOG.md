@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## Unreleased
 
+## [1.09] - 2026-11-20
+
 ### Fixed
 
 - Load-module and PIM settings are unavailable while their module reports that it is not
